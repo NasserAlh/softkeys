@@ -3,7 +3,7 @@
 **Project:** softkeys — Custom On-Screen Keyboard for Windows 11
 **Stack:** C# / WPF / .NET 8 (self-contained single-file publish)
 **Version:** Draft 1.0 — 2026-07-21
-**Status:** v1.1.0 released 2026-07-21 — Gate A2 passed and final acceptance signed; Amendment A1 delivered (F-12/F-13/F-14), DF-01 closed by CR-18. GitHub is the sole remote and canonical history per CR-17 + addendum (cgit archive deleted).
+**Status:** v1.2 (A2) — M9 in progress. Gate B0 approved 2026-07-21; Amendment A2 adopted as CR-19 (F-15 icon, F-16/F-17/F-18 installer/uninstall/upgrade, F-19 minimize, F-20 snap immunity). v1.1.0 released 2026-07-21 (Gate A2 + final acceptance). GitHub is the sole remote and canonical history per CR-17 + addendum (cgit archive deleted).
 
 ---
 
@@ -81,6 +81,7 @@ Build a **stateless input emitter**: a keyboard window that never queries other 
 - L-04: Bare modifier taps are not injectable in the latch model — the second press of an armed modifier is a pure cancel, emitting nothing (CR-09). Start remains reachable via the taskbar.
 - L-05: Arabic keycaps show the base (unshifted) Arabic glyph only; shifted Arabic characters (diacritics, tatweel, etc.) are produced correctly when typed but are not displayed on the caps (Amendment A1). Revisit only on user demand.
 - L-06: The CapsLock indicator refreshes on softkeys' own events (after each emit, on pointer-enter) — never on a timer. Toggling CapsLock from the physical keyboard while softkeys is idle leaves the indicator stale until the next interaction. Deliberate consequence of the no-polling rule (D-10).
+- L-07: `softkeys-setup.exe` is unsigned like the exe itself — SmartScreen will warn. Recorded in README and release notes with the same verify-hash-or-build-from-source guidance (Amendment A2).
 
 **GATE 0 — Approver signs off on §3 before design begins.**
 
@@ -184,10 +185,11 @@ Each milestone = one commit series + gate review by Approver before the next sta
 
 | ID | Item | Notes |
 |---|---|---|
-| E-01 | Arabic key labels + layout-aware label switching | **Delivered in v1.1 (in progress)** as F-12 dual-script keycaps per Amendment A1 (no layout switching — both scripts always shown) |
+| E-01 | Arabic key labels + layout-aware label switching | **Delivered in v1.1.0** as F-12 dual-script keycaps per Amendment A1 (no layout switching — both scripts always shown) |
 | E-02 | Numpad block (toggleable) | Extends KeyMap |
-| E-03 | Function-row (F1–F12) toggle | **Delivered in v1.1 (in progress)** as F-14 permanent function row per Amendment A1 |
+| E-03 | Function-row (F1–F12) toggle | **Delivered in v1.1.0** as F-14 permanent function row per Amendment A1 |
 | E-04 | Themes beyond flat colors | Low priority |
+| E-05 | Distribution channels (winget / Scoop manifests) | Added by Amendment A2; sensible after v1.2.0 exists |
 
 ---
 
@@ -225,3 +227,4 @@ Each milestone = one commit series + gate review by Approver before the next sta
 | 2026-07-21 | — | **Gate A2 / M8 launch check passed.** SHA-256 match (`bda5b491…a9dc`); published exe verified live: typing, case labels with CapsLock indicator, dual-script caps, capture toggle, edge resize, settings restore. T-12 re-witnessed: armed Alt+F4 closed a Win11 Notepad window — DF-01 closed by CR-18. Chord feel: the 120 ms per-chord pause is imperceptible; no polish CR. | Approved — Nasser |
 | 2026-07-21 | CR-17 | **Addendum.** The frozen cgit archive on the VPS has been deleted by the Approver. GitHub is the sole remote and the canonical history from this date. | Approved — Nasser |
 | 2026-07-21 | — | **FINAL ACCEPTANCE v1.1.0.** Amendment A1 delivered: F-12/F-13/F-14 witnessed via T-10–T-13 including the re-witnessed T-12, regression green, input path unchanged except the approved CR-18 chord timing. | **Signed off — Nasser** |
+| 2026-07-21 | CR-19 | **Amendment A2 adopted — Gate B0 approved.** `docs/softkeys-v1.2-amendment.md` in force: F-15 application icon, F-16 per-user installer (Inno Setup, no elevation), F-17 clean uninstall (settings kept by default, D-18), F-18 in-place upgrade, F-19 minimize (CR-13 `OnStateChanged` guard narrowed to Maximized-only, D-19), and F-20 snap immunity (added at Gate B0: `WS_MAXIMIZEBOX` cleared per D-20; CR-12 edge-drag resize unaffected). NF-08/NF-09; D-14…D-20; L-07 → §3.3; T-14…T-18 (T-18 extended with edge-drag snap checks); milestones M9/M10, gates B0–B2 (Gate B1 evidence: T-14–T-18 witnessed). Housekeeping folded into M9: gitignored CLAUDE.md refreshed to post-v1.1.0 reality; `docs/screenshot.png` tight-cropped to the keyboard bounds. | Approved — Nasser |
