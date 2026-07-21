@@ -77,7 +77,7 @@ Self-test additions required: Arabic mapping table integrity (every dual key has
 | Milestone | Deliverable | Gate evidence |
 |---|---|---|
 | M7 — v1.1 implementation | F-12, F-13, F-14 complete; self-test extended and green | Selftest output; T-10–T-13 witnessed by Approver |
-| M8 — v1.1.0 release | Publish per baseline §7; SHA-256 in README and release notes; tag `v1.1.0`; push main + tag to origin and github; GitHub Release with exe asset; README feature list and screenshot updated (screenshot now shows dual-script caps — retake by Approver) | Hash match witnessed; release page live; regression T-13 recorded |
+| M8 — v1.1.0 release | Publish per baseline §7; SHA-256 in README and release notes; tag `v1.1.0`; push main + tag to `origin` (GitHub — sole remote per baseline CR-17); GitHub Release with exe asset; README feature list and screenshot updated (screenshot now shows dual-script caps — retake by Approver) | Hash match witnessed; release page live; regression T-13 recorded |
 
 Gate sequence: **Gate A0** (this amendment approved) → M7 implementation → **Gate A1** (T-10–T-13 witnessed) → M8 release → **Gate A2** (final v1.1.0 acceptance).
 

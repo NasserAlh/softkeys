@@ -3,7 +3,7 @@
 **Project:** softkeys — Custom On-Screen Keyboard for Windows 11
 **Stack:** C# / WPF / .NET 8 (self-contained single-file publish)
 **Version:** Draft 1.0 — 2026-07-21
-**Status:** Released — v1.0.0 accepted and tagged 2026-07-21 (see §9); published to cgit (`origin`) and the GitHub mirror (M6). Enhancements live in §8.
+**Status:** Released — v1.0.0 accepted and tagged 2026-07-21 (see §9). GitHub (`github.com/NasserAlh/softkeys`) is the sole remote and system of record per CR-17; the cgit copy is a frozen v1.0.0 archive. v1.1 amendment drafted (`docs/softkeys-v1.1-amendment.md`), awaiting Gate A0.
 
 ---
 
@@ -72,7 +72,7 @@ Build a **stateless input emitter**: a keyboard window that never queries other 
 | NF-04 | **No elevation.** Runs as standard user. Documented limitation: cannot type into elevated (admin) windows due to UIPI — this is accepted, not worked around. |
 | NF-05 | **Resource budget.** Idle CPU ≈ 0%, memory < 150 MB, startup < 2 s on target hardware. |
 | NF-06 | **DPI awareness.** Per-monitor DPI aware; crisp rendering on the 4K/high-DPI displays of HOME-GAMING-PC. |
-| NF-07 | **Source hosting.** Repo on self-hosted cgit (`git.nasserhub.net`), tagged releases, no external CI dependency. |
+| NF-07 | **Source hosting.** Repo on self-hosted cgit (`git.nasserhub.net`), tagged releases, no external CI dependency. *Amended by CR-17 (2026-07-21): hosting is GitHub (`github.com/NasserAlh/softkeys`), the sole remote and system of record; the cgit repo is a frozen v1.0.0 archive.* |
 
 ### 3.3 Known Limitations (accepted at Gate 0)
 - L-01: `SendInput` may be ignored by anti-cheat-protected games and elevated windows (UIPI). Accepted.
@@ -173,7 +173,7 @@ Each milestone = one commit series + gate review by Approver before the next sta
 
 1. `dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true`
 2. Record SHA-256 of the exe in README.
-3. Push to `git.nasserhub.net` (new bare repo `softkeys`), tag `v1.0.0`, verify cgit agefile hook.
+3. Push to `git.nasserhub.net` (new bare repo `softkeys`), tag `v1.0.0`, verify cgit agefile hook. *(Executed for v1.0.0; superseded by CR-17 — future pushes go to GitHub only, and the cgit agefile check no longer applies.)*
 4. Place exe on HOME-GAMING-PC; optional Start Menu shortcut. No installer.
 
 ---
@@ -215,3 +215,4 @@ Each milestone = one commit series + gate review by Approver before the next sta
 | 2026-07-21 | CR-15 | **M6 — Public mirror** added to §5: empty public GitHub repo `NasserAlh/softkeys` created pre-push; second remote `github` (HTTPS — the Approver's GitHub SSH key was not registered at release time; switchable later); `main` + all tags pushed after M5 acceptance. **Amended (M6 completion):** repo licensed **LGPL-2.1**, matching upstream vboard (`reference/vboard.py` is redistributed publicly, so the license text is mandatory); full official text at `/LICENSE`, attribution in `reference/README.md` (mdev588, github.com/mdev588/vboard, archived 2026-03, redistributed unmodified). Public README replaced with the Architect's draft (v1.0.0 hash retained inline per §7). Hostname decision: `git.nasserhub.net` stays in public history — already public-facing, and a rewrite would invalidate the published v1.0.0 hashes. v1.0.0 exe published as a GitHub release asset with hash, SmartScreen note, and vboard credit. | Approved — Nasser |
 | 2026-07-21 | — | **Gate 2 / M5 launch check passed.** SHA-256 match (`860fefe9…bc91bd`); published exe verified live: typing, full shifted row, capture toggle, edge resize, maximize block, color/opacity, settings restore. | Approved — Nasser |
 | 2026-07-21 | — | **FINAL ACCEPTANCE.** All §2.3 success criteria witnessed: zero freezes across soak and capture tests, screenshot invisibility, typing in daily applications, EN and AR both proven. softkeys v1.0.0 accepted; remaining items live in the §8 backlog. | **Signed off — Nasser** |
+| 2026-07-21 | CR-17 | **cgit remote removed; GitHub is the system of record.** `github.com/NasserAlh/softkeys` is the sole remote from this date; NF-07 amended from self-hosted cgit to GitHub. The bare repo on `git.nasserhub.net` is untouched and remains a frozen archive of v1.0.0 (through commit `ed83f02` + all tags); its deletion, if ever, is a separate Approver decision. §7 step 3 marked superseded. (CR-16 remains reserved for Amendment A1 adoption at Gate A0.) | Approved — Nasser |
