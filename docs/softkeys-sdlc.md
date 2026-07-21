@@ -3,7 +3,7 @@
 **Project:** softkeys — Custom On-Screen Keyboard for Windows 11
 **Stack:** C# / WPF / .NET 8 (self-contained single-file publish)
 **Version:** Draft 1.0 — 2026-07-21
-**Status:** M2 approved and tagged `m2-window-shell` 2026-07-21 (see §9); M3 in progress
+**Status:** M3 approved and tagged `m3-full-keyboard` 2026-07-21 (see §9); M4 in progress
 
 ---
 
@@ -78,6 +78,7 @@ Build a **stateless input emitter**: a keyboard window that never queries other 
 - L-01: `SendInput` may be ignored by anti-cheat-protected games and elevated windows (UIPI). Accepted.
 - L-02: With F-01 ON, the keyboard is also invisible in screen sharing and recordings. Mitigated by the toggle.
 - L-03: Key labels are English-only in v1; Arabic characters are produced correctly (F-03) but not displayed on keys. Backlog E-01.
+- L-04: Bare modifier taps are not injectable in the latch model — the second press of an armed modifier is a pure cancel, emitting nothing (CR-09). Start remains reachable via the taskbar.
 
 **GATE 0 — Approver signs off on §3 before design begins.**
 
@@ -101,7 +102,8 @@ softkeys/
 │   ├── KeyMap.cs                     # key definitions: label, shifted label, scan code, width, is-modifier
 │   └── Settings.cs                   # JSON load/save, defaults, %APPDATA% path
 ├── tests/
-│   └── InputInjectorTests.cs         # struct-size assertions, scan-code table integrity
+│   ├── InputInjectorTests.cs         # struct-size assertions, scan-code table integrity
+│   └── KeyMapTests.cs                # layout/width/shift-pair integrity vs CR-03 (CR-10)
 ├── softkeys.csproj
 └── README.md
 ```
@@ -156,7 +158,7 @@ Each milestone = one commit series + gate review by Approver before the next sta
 | T-02 | Focus Notepad, click 20 keys | Notepad keeps focus the entire time; all characters land |
 | T-03 | Switch Windows layout to Arabic, type letter row | Arabic characters produced; switch back to EN, Latin produced |
 | T-04 | Resize window from minimum to full-screen | Keys scale proportionally; layout matches §3.1 F-04 |
-| T-05 | Shift+a, Ctrl+c/Ctrl+v round trip, Win key opens Start | Correct results; modifier auto-releases; labels toggle |
+| T-05 | Shift+a, Ctrl+c/Ctrl+v round trip, Super+E chord opens Explorer (amended per CR-09) | Correct results; modifier auto-releases; labels toggle |
 | T-06 | Hold Backspace 3 s in a text field | Single delete, ~400 ms pause, then repeating deletes; stops on release |
 | T-07 | Run 10 min with Bookmap + MotiveWave active; take 5 screenshots | Zero freezes; keyboard stays topmost without polling |
 | T-08 | Change color to White, opacity to 0.50 | Text auto-switches to dark; opacity visibly applied |
@@ -199,3 +201,6 @@ Each milestone = one commit series + gate review by Approver before the next sta
 | 2026-07-21 | CR-07 | **WinExe output type** with AttachConsole/AllocConsole plumbing so `--selftest`/`--harness` remain console modes while the keyboard opens no console window. | Approved — Nasser |
 | 2026-07-21 | CR-08 | **Harness abort cleanup:** spawned Notepad closed via PID-diff + graceful WM_CLOSE, best-effort (Win11 stub hand-off). Closes the M1 polish item. | Approved — Nasser |
 | 2026-07-21 | — | **Gate 2 / M2 approved.** Witnessed: T-01 (10 snips, zero freezes, keyboard absent, toggle reappearance confirmed) and T-02 (20 keys, focus never left target). Tagged `m2-window-shell`. | Approved — Nasser |
+| 2026-07-21 | CR-09 | **T-05 amended.** "Win key opens Start" replaced by the chord test "arm Super, press E → Explorer opens." Second press of an armed modifier stays a pure disarm — emitting on cancel would conflate cancel with emit (armed Alt → app menus, armed Win → Start). New limitation L-04 added to §3.3. | Approved — Nasser |
+| 2026-07-21 | CR-10 | **`tests/KeyMapTests.cs` ratified** into the §4.1 tree (same class of change as CR-04). | Approved — Nasser |
+| 2026-07-21 | — | **Gate 2 / M3 approved.** Witnessed: T-03 (Arabic/EN via D-02), T-05 (sticky Shift, label swap, Ctrl round trip, Super+E chord per CR-09), T-06 (repeat with release and pointer-leave cancel). T-04 deliberately partial until F-11 at M4. Tagged `m3-full-keyboard`. | Approved — Nasser |
