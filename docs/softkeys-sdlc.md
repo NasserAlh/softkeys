@@ -3,7 +3,7 @@
 **Project:** softkeys — Custom On-Screen Keyboard for Windows 11
 **Stack:** C# / WPF / .NET 8 (self-contained single-file publish)
 **Version:** Draft 1.0 — 2026-07-21
-**Status:** M3 approved and tagged `m3-full-keyboard` 2026-07-21 (see §9); M4 in progress
+**Status:** M4 approved and tagged `m4-settings-polish` 2026-07-21 (see §9); M5 (release) in progress
 
 ---
 
@@ -60,7 +60,7 @@ Build a **stateless input emitter**: a keyboard window that never queries other 
 | F-08 | **Topmost-but-passive.** `HWND_TOPMOST` asserted once at startup. No re-assertion timers or z-order polling. | T-07 |
 | F-09 | **Appearance settings.** Background color (preset palette), opacity (0.00–1.00 in 0.01 steps), automatic text-color contrast switch for light backgrounds. Controls in header bar, collapsible behind a ☰ toggle. | T-08 |
 | F-10 | **Settings persistence.** Color, opacity, window size, and F-01 toggle state persisted to `%APPDATA%\softkeys\settings.json`; restored on startup; corrupt/missing file falls back to defaults without error dialogs. | T-09 |
-| F-11 | **Resizable window.** Keys scale proportionally with window size; size persisted per F-10. | T-04 |
+| F-11 | **Resizable window.** Keys scale proportionally with window size; size persisted per F-10. Maximize is blocked (CR-13); "full-screen" means edge-drag sizing, implemented via a WM_NCHITTEST edge band (CR-12). | T-04 |
 
 ### 3.2 Non-Functional Requirements
 
@@ -100,10 +100,12 @@ softkeys/
 │   │   ├── InputInjector.cs          # SendInput P/Invoke, INPUT/KEYBDINPUT structs, scan-code table
 │   │   └── WindowStyles.cs           # WS_EX_NOACTIVATE, HWND_TOPMOST, SetWindowDisplayAffinity
 │   ├── KeyMap.cs                     # key definitions: label, shifted label, scan code, width, is-modifier
-│   └── Settings.cs                   # JSON load/save, defaults, %APPDATA% path
+│   ├── Settings.cs                   # JSON load/save, defaults, %APPDATA% path
+│   └── app.manifest                  # per-monitor-v2 DPI awareness, NF-06 (CR-11)
 ├── tests/
 │   ├── InputInjectorTests.cs         # struct-size assertions, scan-code table integrity
-│   └── KeyMapTests.cs                # layout/width/shift-pair integrity vs CR-03 (CR-10)
+│   ├── KeyMapTests.cs                # layout/width/shift-pair integrity vs CR-03 (CR-10)
+│   └── SettingsTests.cs              # F-10 silent-default fallback, roundtrip (CR-11)
 ├── softkeys.csproj
 └── README.md
 ```
@@ -204,3 +206,7 @@ Each milestone = one commit series + gate review by Approver before the next sta
 | 2026-07-21 | CR-09 | **T-05 amended.** "Win key opens Start" replaced by the chord test "arm Super, press E → Explorer opens." Second press of an armed modifier stays a pure disarm — emitting on cancel would conflate cancel with emit (armed Alt → app menus, armed Win → Start). New limitation L-04 added to §3.3. | Approved — Nasser |
 | 2026-07-21 | CR-10 | **`tests/KeyMapTests.cs` ratified** into the §4.1 tree (same class of change as CR-04). | Approved — Nasser |
 | 2026-07-21 | — | **Gate 2 / M3 approved.** Witnessed: T-03 (Arabic/EN via D-02), T-05 (sticky Shift, label swap, Ctrl round trip, Super+E chord per CR-09), T-06 (repeat with release and pointer-leave cancel). T-04 deliberately partial until F-11 at M4. Tagged `m3-full-keyboard`. | Approved — Nasser |
+| 2026-07-21 | CR-11 | **`src/app.manifest` and `tests/SettingsTests.cs`** added to the §4.1 tree. | Approved — Nasser |
+| 2026-07-21 | CR-12 | **Borderless resize** via WM_NCHITTEST edge band through `HwndSource.AddHook` on softkeys' own HWND (in-process subclass; NF-01 compliant). Replaces CanResizeWithGrip. | Approved — Nasser |
+| 2026-07-21 | CR-13 | **Maximize fully blocked** (single-click-only DragMove, caption double-click swallowed, OnStateChanged revert). T-04's "full-screen" defined as edge-drag, not maximize; noted under F-11. | Approved — Nasser |
+| 2026-07-21 | — | **Gate 2 / M4 approved.** Witnessed: T-07 (10-min soak with Bookmap + MotiveWave + 5 screenshots, zero freezes, topmost held), T-08 (White/0.50, auto dark text), T-04 completed via edge-drag scaling, T-09 (persistence round trip + corrupt-file silent defaults). Tagged `m4-settings-polish`. | Approved — Nasser |
