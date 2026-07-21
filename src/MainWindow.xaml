@@ -11,6 +11,67 @@
         Focusable="False"
         WindowStartupLocation="CenterScreen">
 
-    <Border x:Name="RootBorder" CornerRadius="6" Background="#E6000000" />
+    <!-- R-02: nothing in this window may ever take focus -->
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="#66FFFFFF" />
+            <Setter Property="FontSize" Value="16" />
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Foreground" Value="#CCCCCC" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="Slider">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#CCCCCC" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </Window.Resources>
+
+    <Border x:Name="RootBorder" CornerRadius="6" Background="#E6000000">
+        <DockPanel Margin="6">
+
+            <!-- Temporary M2 control strip; becomes the collapsible header bar at M4 (F-09) -->
+            <DockPanel x:Name="DragBar" DockPanel.Dock="Top" Height="32"
+                       Background="Transparent"
+                       MouseLeftButtonDown="OnDragBarMouseDown">
+                <Button x:Name="CloseButton" DockPanel.Dock="Right" Width="40"
+                        Content="✕" BorderThickness="0" Click="OnCloseClick" />
+                <TextBlock Text="softkeys" FontWeight="Bold" Margin="6,0,16,0" />
+                <CheckBox x:Name="CaptureToggle" Content="Hidden from capture"
+                          IsChecked="True"
+                          Checked="OnCaptureToggleChanged" Unchecked="OnCaptureToggleChanged" />
+                <TextBlock Text="Opacity" Margin="24,0,8,0" />
+                <Slider x:Name="OpacitySlider" Width="140"
+                        Minimum="0" Maximum="1"
+                        SmallChange="0.01" LargeChange="0.10"
+                        Value="0.90"
+                        ValueChanged="OnOpacityChanged" />
+                <TextBlock x:Name="OpacityLabel" Margin="8,0,0,0" Text="0.90" />
+            </DockPanel>
+
+            <!-- Temporary T-02 test row; the full five-row grid lands at M3 (F-04) -->
+            <UniformGrid Rows="1">
+                <Button Content="Q" Tag="Q" Click="OnKeyClick" />
+                <Button Content="W" Tag="W" Click="OnKeyClick" />
+                <Button Content="E" Tag="E" Click="OnKeyClick" />
+                <Button Content="R" Tag="R" Click="OnKeyClick" />
+                <Button Content="T" Tag="T" Click="OnKeyClick" />
+                <Button Content="Y" Tag="Y" Click="OnKeyClick" />
+                <Button Content="U" Tag="U" Click="OnKeyClick" />
+                <Button Content="I" Tag="I" Click="OnKeyClick" />
+                <Button Content="O" Tag="O" Click="OnKeyClick" />
+                <Button Content="P" Tag="P" Click="OnKeyClick" />
+            </UniformGrid>
+
+        </DockPanel>
+    </Border>
 
 </Window>
