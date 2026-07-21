@@ -20,6 +20,7 @@ internal static class Program
             "--selftest" => WithConsole(() =>
                 Tests.InputInjectorTests.RunAll() + Tests.KeyMapTests.RunAll() + Tests.SettingsTests.RunAll()),
             "--harness" => WithConsole(Harness.Run),
+            "--capsprobe" => WithConsole(Harness.RunCapsProbe),
             _ => WithConsole(Usage),
         };
     }

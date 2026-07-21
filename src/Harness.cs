@@ -1,5 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Threading;
 using Softkeys.Native;
 
 namespace Softkeys;
@@ -70,6 +73,58 @@ internal static class Harness
         }
 
         Console.WriteLine("Done — \"test\" should now be visible in the Notepad window.");
+        return 0;
+    }
+
+    /// <summary>
+    /// Diagnostic for the D-09 open question: does GetKeyState(VK_CAPITAL)
+    /// track physical CapsLock toggles on a thread whose NOACTIVATE window
+    /// never receives keyboard messages? Prints the read every 250 ms for
+    /// 15 s while the tester toggles CapsLock on the physical keyboard.
+    /// The timer lives ONLY in this diagnostic — the product runtime stays
+    /// timer-free per F-08/D-10.
+    /// </summary>
+    public static int RunCapsProbe()
+    {
+        Console.WriteLine("capsprobe: reading GetKeyState(VK_CAPITAL) from a NOACTIVATE WPF window thread.");
+        Console.WriteLine("Toggle CapsLock on the PHYSICAL keyboard and watch whether the value follows.");
+        Console.WriteLine("Runs for 15 seconds.");
+
+        var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+        var window = new Window
+        {
+            Title = "softkeys capsprobe",
+            Width = 240,
+            Height = 90,
+            ShowActivated = false,
+            Focusable = false,
+            Content = "capsprobe running — watch the console",
+        };
+        window.SourceInitialized += (_, _) =>
+            WindowStyles.ApplyNoActivate(new WindowInteropHelper(window).Handle);
+
+        bool? last = null;
+        int ticks = 0;
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        timer.Tick += (_, _) =>
+        {
+            bool caps = InputInjector.IsCapsLockOn;
+            if (caps != last)
+            {
+                Console.WriteLine($"  t={ticks * 250,5} ms  CapsLock={caps}");
+                last = caps;
+            }
+            if (++ticks >= 60)
+            {
+                timer.Stop();
+                app.Shutdown();
+            }
+        };
+        timer.Start();
+        window.Show();
+        app.Run();
+        Console.WriteLine("capsprobe done. If the value never followed your physical toggles,");
+        Console.WriteLine("GetKeyState is stale on this thread and the D-09 fallback applies.");
         return 0;
     }
 
