@@ -26,7 +26,7 @@ softkeys exits that design category entirely. It is a **stateless input emitter*
 ## Install
 
 1. Download `softkeys.exe` from the [latest release](../../releases/latest).
-2. Verify the hash (published in the release notes; for v1.1.0: `8372a463bcd3feb7c9a453f8b4fbbfe7107d87056a5c346b8746969f29ff62ef`):
+2. Verify the hash (published in the release notes; for v1.1.0: `bda5b49152eec9d635edcaf3e65c5f237853621a501438fa457986534575a9dc`):
    `certutil -hashfile softkeys.exe SHA256`
 3. Run it. No installation, no admin rights.
 
