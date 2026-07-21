@@ -60,8 +60,13 @@ public partial class MainWindow : Window
 
     private readonly Dictionary<string, bool> _armed = ModifierOrder.ToDictionary(m => m, _ => false);
     private readonly Dictionary<string, Button> _modifierButtons = new();
-    private readonly List<(Button Button, KeyDef Key)> _shiftableButtons = new();
     private Brush _armedBrush = new SolidColorBrush(Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF));
+
+    /// <summary>A keycap whose Latin text changes at runtime (F-06/F-13).</summary>
+    private sealed record DynamicCap(KeyDef Key, TextBlock Latin);
+
+    private readonly List<DynamicCap> _dynamicCaps = new();
+    private Button? _capsLockButton;
 
     // F-07 via two DispatcherTimers (D-06): one-shot 400 ms delay, then 100 ms ticks.
     private readonly DispatcherTimer _repeatDelay = new() { Interval = TimeSpan.FromMilliseconds(400) };
@@ -101,6 +106,9 @@ public partial class MainWindow : Window
             else
                 _repeatInterval.Stop();
         };
+
+        // D-10: pointer-enter is one of the two CapsLock refresh triggers.
+        MouseEnter += (_, _) => RefreshKeyCaps();
 
         _initialized = true;
         ApplyAppearance();
@@ -200,37 +208,102 @@ public partial class MainWindow : Window
 
     private void BuildKeyGrid()
     {
-        for (int c = 0; c < 30; c++)
-            KeyGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        // D-13: rows are independent star grids inside one six-row outer grid,
+        // so per-row unit sums may differ (27 for the F-row, 30 elsewhere)
+        // while row heights stay equal and widths scale proportionally (F-11).
         for (int r = 0; r < KeyMap.Rows.Count; r++)
             KeyGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
         for (int r = 0; r < KeyMap.Rows.Count; r++)
         {
+            var rowGrid = new Grid();
+            int units = KeyMap.Rows[r].Sum(k => k.Width);
+            for (int c = 0; c < units; c++)
+                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            Grid.SetRow(rowGrid, r);
+            KeyGrid.Children.Add(rowGrid);
+
             int col = 0;
             foreach (KeyDef key in KeyMap.Rows[r])
             {
-                var button = new Button { Content = key.Label, Tag = key, Margin = new Thickness(2) };
-
-                // R-03: press/release/leave triple, mirroring vboard's handlers.
-                button.PreviewMouseLeftButtonDown += OnKeyPress;
-                button.PreviewMouseLeftButtonUp += OnKeyRelease;
-                button.MouseLeave += OnKeyLeave;
-
-                Grid.SetRow(button, r);
+                Button button = CreateKeyButton(key);
                 Grid.SetColumn(button, col);
                 Grid.SetColumnSpan(button, key.Width);
-                KeyGrid.Children.Add(button);
-
-                if (key.IsModifier)
-                    _modifierButtons[key.Name] = button;
-                if (key.ShiftLabel is not null)
-                    _shiftableButtons.Add((button, key));
-
+                rowGrid.Children.Add(button);
                 col += key.Width;
             }
         }
     }
+
+    private Button CreateKeyButton(KeyDef key)
+    {
+        var button = new Button { Tag = key, Margin = new Thickness(2) };
+
+        // R-03: press/release/leave triple, mirroring vboard's handlers.
+        button.PreviewMouseLeftButtonDown += OnKeyPress;
+        button.PreviewMouseLeftButtonUp += OnKeyRelease;
+        button.MouseLeave += OnKeyLeave;
+
+        if (key.IsModifier)
+            _modifierButtons[key.Name] = button;
+        if (key.Name == "CapsLock")
+            _capsLockButton = button;
+
+        bool dynamic = IsLetter(key) || key.ShiftLabel is not null;
+        if (!dynamic && key.Arabic is null)
+        {
+            button.Content = key.Label;
+            return button;
+        }
+
+        // D-12: structured cap — Latin TextBlock, plus the Arabic glyph
+        // bottom-right at ~75% size for dual-script keys (F-12). Explicit
+        // KeyForeground references keep the F-09 contrast switch working
+        // (the implicit TextBlock style would otherwise paint these as
+        // header text).
+        var content = new Grid();
+        var latin = new TextBlock { Text = InitialLatin(key) };
+        latin.SetResourceReference(TextBlock.ForegroundProperty, "KeyForeground");
+
+        if (key.Arabic is not null)
+        {
+            button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+            button.VerticalContentAlignment = VerticalAlignment.Stretch;
+            latin.HorizontalAlignment = HorizontalAlignment.Left;
+            latin.VerticalAlignment = VerticalAlignment.Top;
+            latin.Margin = new Thickness(4, 1, 0, 0);
+
+            var arabic = new TextBlock
+            {
+                Text = key.Arabic,
+                FontSize = 11,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Margin = new Thickness(0, 0, 4, 1),
+            };
+            arabic.SetResourceReference(TextBlock.ForegroundProperty, "KeyForeground");
+            content.Children.Add(arabic);
+        }
+        else
+        {
+            latin.HorizontalAlignment = HorizontalAlignment.Center;
+            latin.VerticalAlignment = VerticalAlignment.Center;
+        }
+
+        content.Children.Add(latin);
+        button.Content = content;
+
+        if (dynamic)
+            _dynamicCaps.Add(new DynamicCap(key, latin));
+
+        return button;
+    }
+
+    private static bool IsLetter(KeyDef key) =>
+        key.Name.Length == 1 && key.Name[0] is >= 'A' and <= 'Z';
+
+    private static string InitialLatin(KeyDef key) =>
+        IsLetter(key) ? key.Label.ToLowerInvariant() : key.Label;
 
     // -- Key press / sticky modifiers (F-05) --------------------------------
 
@@ -274,7 +347,7 @@ public partial class MainWindow : Window
             SetModifier("Shift_R", false);
         }
 
-        UpdateShiftLabels();
+        RefreshKeyCaps();
     }
 
     private void SetModifier(string name, bool armed)
@@ -303,14 +376,33 @@ public partial class MainWindow : Window
                 if (_armed[name])
                     SetModifier(name, false);
 
-        UpdateShiftLabels();
+        // D-10: after-each-emit is the other CapsLock refresh trigger. The
+        // immediate refresh updates shift labels; the queued one re-reads
+        // CapsLock after this input cycle's messages have drained.
+        RefreshKeyCaps();
+        Dispatcher.BeginInvoke(RefreshKeyCaps, DispatcherPriority.Background);
     }
 
-    private void UpdateShiftLabels()
+    /// <summary>
+    /// F-06 + F-13: symbol caps show their shifted glyph while Shift is armed;
+    /// letter caps are lowercase unless Shift armed XOR CapsLock active; the
+    /// CapsLock key carries the armed-style highlight while active (D-09).
+    /// </summary>
+    private void RefreshKeyCaps()
     {
         bool shifted = _armed["Shift_L"] || _armed["Shift_R"];
-        foreach ((Button button, KeyDef key) in _shiftableButtons)
-            button.Content = shifted ? key.ShiftLabel : key.Label;
+        bool caps = InputInjector.IsCapsLockOn;
+
+        foreach ((KeyDef key, TextBlock latin) in _dynamicCaps)
+        {
+            if (IsLetter(key))
+                latin.Text = shifted ^ caps ? key.Label : key.Label.ToLowerInvariant();
+            else if (key.ShiftLabel is not null)
+                latin.Text = shifted ? key.ShiftLabel : key.Label;
+        }
+
+        if (_capsLockButton is not null)
+            _capsLockButton.Background = caps ? _armedBrush : Brushes.Transparent;
     }
 
     // -- Header bar (F-09) --------------------------------------------------
@@ -367,6 +459,8 @@ public partial class MainWindow : Window
         _armedBrush = new SolidColorBrush(Color.FromArgb(0x55, text.R, text.G, text.B));
         foreach ((string name, Button button) in _modifierButtons)
             button.Background = _armed[name] ? _armedBrush : Brushes.Transparent;
+
+        RefreshKeyCaps(); // re-tint the CapsLock highlight with the new brush
     }
 
     private void OnDragBarMouseDown(object sender, MouseButtonEventArgs e)

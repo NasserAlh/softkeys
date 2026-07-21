@@ -2,8 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="softkeys"
-        Width="900" Height="320"
-        MinWidth="450" MinHeight="220"
+        Width="900" Height="380"
+        MinWidth="450" MinHeight="260"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -70,8 +70,9 @@
                 </StackPanel>
             </DockPanel>
 
-            <!-- F-04: five rows, 30 star columns; populated from KeyMap in code (D-01).
-                 Star sizing gives proportional key scaling on resize (F-11). -->
+            <!-- F-04 + F-14: six rows, each an independent star grid built from
+                 KeyMap in code (D-01, D-13). Star sizing gives proportional key
+                 scaling on resize (F-11). -->
             <Grid x:Name="KeyGrid" />
 
         </DockPanel>

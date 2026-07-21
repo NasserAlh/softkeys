@@ -22,7 +22,7 @@ internal static class SettingsTests
             string missing = Path.Combine(dir, "missing.json");
             Settings defaults = Settings.Load(missing);
             Check("missing file yields defaults",
-                defaults is { BackgroundColor: "Black", Opacity: 0.90, WindowWidth: 900, WindowHeight: 320, CaptureExcluded: true });
+                defaults is { BackgroundColor: "Black", Opacity: 0.90, WindowWidth: 900, WindowHeight: 380, CaptureExcluded: true });
 
             string corrupt = Path.Combine(dir, "corrupt.json");
             File.WriteAllText(corrupt, "{ this is not json !!");

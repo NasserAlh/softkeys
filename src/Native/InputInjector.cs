@@ -68,6 +68,19 @@ public static class InputInjector
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint cInputs, INPUT[] pInputs, int cbSize);
 
+    private const int VK_CAPITAL = 0x14;
+
+    [DllImport("user32.dll")]
+    private static extern short GetKeyState(int nVirtKey);
+
+    /// <summary>
+    /// D-09: CapsLock toggle bit via GetKeyState — reads input state
+    /// synchronized to this thread's message queue; not a cross-process query,
+    /// explicitly permitted per the NF-01 clarification in Amendment A1.
+    /// Refresh cadence is event-driven only (D-10).
+    /// </summary>
+    public static bool IsCapsLockOn => (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
+
     /// <summary>
     /// Injects a full tap — modifier downs, key down, key up, modifier ups —
     /// as one SendInput call so physical input cannot interleave (D-03).

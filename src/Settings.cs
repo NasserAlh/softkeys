@@ -14,7 +14,7 @@ public sealed class Settings
     public string BackgroundColor { get; set; } = "Black";
     public double Opacity { get; set; } = 0.90;
     public double WindowWidth { get; set; } = 900;
-    public double WindowHeight { get; set; } = 320;
+    public double WindowHeight { get; set; } = 380; // six rows per D-13 (min 260)
     public bool CaptureExcluded { get; set; } = true;
 
     public static string DefaultPath => Path.Combine(
