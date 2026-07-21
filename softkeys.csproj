@@ -15,6 +15,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- NF-06: per-monitor-v2 DPI awareness -->
     <ApplicationManifest>src\app.manifest</ApplicationManifest>
+    <!-- NF-03: bundle WPF native libs so the §7 publish command yields ONE exe.
+         Only takes effect when PublishSingleFile is set. -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
 </Project>
