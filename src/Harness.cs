@@ -129,13 +129,13 @@ internal static class Harness
     }
 
     /// <summary>
-    /// DF-01 diagnostic: reproduces armed Alt+F4 against a spawned Notepad
-    /// window and, if the production one-batch injection fails to close it,
-    /// re-tries the identical events split across separate SendInput calls
-    /// with small gaps. Discriminates "Alt chord broken" from "zero-gap batch
-    /// vs. apps that read modifier state asynchronously at processing time".
-    /// Same focus guard as the M1 harness; foreground query and IsWindow are
-    /// harness-only code, never the product input path (NF-01).
+    /// DF-01 diagnostic, kept post-fix as a regression probe: drives armed
+    /// Alt+F4 through the production Tap path — three gapped batches per
+    /// CR-18 — against a spawned Notepad window. Only if that fails does it
+    /// re-try a hand-rolled split of the same events, separating "Tap has
+    /// regressed from CR-18" from "splitting no longer suffices on this
+    /// target". Same focus guard as the M1 harness; foreground query and
+    /// IsWindow are harness-only code, never the product input path (NF-01).
     /// </summary>
     public static int RunAltProbe()
     {
@@ -176,8 +176,8 @@ internal static class Harness
         ScanKey f4 = ScanCodeTable.Keys["F4"];
         ScanKey alt = ScanCodeTable.Keys["Alt_L"];
 
-        // A — the exact production path: one SendInput batch (D-03).
-        Console.WriteLine("A: one-batch Alt down, F4 down, F4 up, Alt up (production Tap path)...");
+        // A — the exact production path: three gapped batches (D-03/CR-18).
+        Console.WriteLine("A: production Tap path (CR-18: Alt down / F4 tap / Alt up, gapped batches)...");
         if (!InputInjector.Tap(f4, new[] { alt }))
         {
             Console.Error.WriteLine("SendInput rejected the batch.");
@@ -185,7 +185,7 @@ internal static class Harness
             return 1;
         }
         bool closedA = WaitForWindowGone(target, 2000);
-        Console.WriteLine($"A: window {(closedA ? "CLOSED — DF-01 does not reproduce here" : "STILL OPEN — DF-01 reproduced")}");
+        Console.WriteLine($"A: window {(closedA ? "CLOSED — CR-18 fix verified" : "STILL OPEN — DF-01 regression")}");
 
         bool closedB = false;
         if (!closedA)
@@ -197,9 +197,10 @@ internal static class Harness
                 return 1;
             }
 
-            // B — identical events, separate SendInput calls with gaps, so the
-            // target processes F4 while Alt is still logically down system-wide.
-            Console.WriteLine("B: same events split across SendInput calls with 60 ms gaps...");
+            // B — control: the same events hand-rolled as separate SendInput
+            // calls with gaps, bypassing Tap. Separates a Tap regression from
+            // a target where splitting no longer suffices.
+            Console.WriteLine("B: control — same events hand-rolled across SendInput calls with 60 ms gaps...");
             bool sent = InputInjector.EmitSingle(alt, up: false);
             Thread.Sleep(60);
             sent &= InputInjector.EmitSingle(f4, up: false);
@@ -217,11 +218,11 @@ internal static class Harness
 
         Console.WriteLine();
         if (closedA)
-            Console.WriteLine("Verdict: production path works against Notepad here — DF-01 is environmental or UI-path specific; probe again under the launch-check conditions.");
+            Console.WriteLine("Verdict: production chord path closes Notepad — CR-18 holding.");
         else if (closedB)
-            Console.WriteLine("Verdict: root cause confirmed — the zero-gap one-batch injection; Notepad reads Alt asynchronously at processing time, after batch Alt-up already happened.");
+            Console.WriteLine("Verdict: hand-rolled split works but the production Tap does not — Tap has regressed from CR-18; diff Tap against BuildBatches.");
         else
-            Console.WriteLine("Verdict: Alt+F4 failed in BOTH forms — batching is not the cause; the Alt injection itself does not register. Hypothesis rejected.");
+            Console.WriteLine("Verdict: Alt+F4 failed in BOTH forms — splitting no longer suffices against this target; new investigation needed.");
         return 0;
     }
 
