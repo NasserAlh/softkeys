@@ -9,7 +9,11 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        return Usage();
+        return args.FirstOrDefault() switch
+        {
+            "--selftest" => Tests.InputInjectorTests.RunAll(),
+            _ => Usage(),
+        };
     }
 
     private static int Usage()

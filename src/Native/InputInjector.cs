@@ -1,0 +1,212 @@
+using System.Runtime.InteropServices;
+
+namespace Softkeys.Native;
+
+/// <summary>
+/// A PC/AT set-1 make code plus the E0 extended-key marker (D-05).
+/// </summary>
+public readonly record struct ScanKey(ushort Code, bool Extended);
+
+/// <summary>
+/// Stateless key injection via SendInput using scan codes (D-02, F-03).
+/// The active Windows keyboard layout translates scan codes to characters,
+/// so EN/AR both work without any layout knowledge here. Zero cross-process
+/// calls (NF-01): build the INPUT array, hand it to SendInput, done.
+/// </summary>
+public static class InputInjector
+{
+    internal const uint INPUT_KEYBOARD = 1;
+
+    internal const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
+    internal const uint KEYEVENTF_KEYUP = 0x0002;
+    internal const uint KEYEVENTF_SCANCODE = 0x0008;
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct INPUT
+    {
+        public uint type;
+        public InputUnion U;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    internal struct InputUnion
+    {
+        [FieldOffset(0)] public MOUSEINPUT mi;
+        [FieldOffset(0)] public KEYBDINPUT ki;
+        [FieldOffset(0)] public HARDWAREINPUT hi;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct KEYBDINPUT
+    {
+        public ushort wVk;
+        public ushort wScan;
+        public uint dwFlags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MOUSEINPUT
+    {
+        public int dx;
+        public int dy;
+        public uint mouseData;
+        public uint dwFlags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct HARDWAREINPUT
+    {
+        public uint uMsg;
+        public ushort wParamL;
+        public ushort wParamH;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint SendInput(uint cInputs, INPUT[] pInputs, int cbSize);
+
+    /// <summary>
+    /// Injects a full tap — modifier downs, key down, key up, modifier ups —
+    /// as one SendInput call so physical input cannot interleave (D-03).
+    /// Returns true when every event was accepted by the system.
+    /// </summary>
+    public static bool Tap(ScanKey key, IReadOnlyList<ScanKey>? modifiers = null)
+    {
+        INPUT[] sequence = BuildTapSequence(key, modifiers ?? Array.Empty<ScanKey>());
+        uint sent = SendInput((uint)sequence.Length, sequence, Marshal.SizeOf<INPUT>());
+        return sent == sequence.Length;
+    }
+
+    /// <summary>
+    /// D-03 ordering: press mods → press key → release key → release mods
+    /// (reverse order). Internal so tests can verify ordering and flags
+    /// without emitting real input.
+    /// </summary>
+    internal static INPUT[] BuildTapSequence(ScanKey key, IReadOnlyList<ScanKey> modifiers)
+    {
+        var sequence = new INPUT[modifiers.Count * 2 + 2];
+        int i = 0;
+
+        for (int m = 0; m < modifiers.Count; m++)
+            sequence[i++] = KeyEvent(modifiers[m], up: false);
+
+        sequence[i++] = KeyEvent(key, up: false);
+        sequence[i++] = KeyEvent(key, up: true);
+
+        for (int m = modifiers.Count - 1; m >= 0; m--)
+            sequence[i++] = KeyEvent(modifiers[m], up: true);
+
+        return sequence;
+    }
+
+    private static INPUT KeyEvent(ScanKey key, bool up)
+    {
+        uint flags = KEYEVENTF_SCANCODE;
+        if (key.Extended) flags |= KEYEVENTF_EXTENDEDKEY;
+        if (up) flags |= KEYEVENTF_KEYUP;
+
+        return new INPUT
+        {
+            type = INPUT_KEYBOARD,
+            U = new InputUnion
+            {
+                ki = new KEYBDINPUT
+                {
+                    wVk = 0, // must be 0 with KEYEVENTF_SCANCODE
+                    wScan = key.Code,
+                    dwFlags = flags,
+                    time = 0,
+                    dwExtraInfo = IntPtr.Zero,
+                },
+            },
+        };
+    }
+}
+
+/// <summary>
+/// Scan codes (PC/AT set 1) for every key in the v1 layout (F-04 per CR-03).
+/// Key names follow vboard.py so KeyMap (M3) maps one-to-one; arrows use
+/// Up/Down/Left/Right instead of glyphs.
+/// </summary>
+public static class ScanCodeTable
+{
+    public static readonly IReadOnlyDictionary<string, ScanKey> Keys = new Dictionary<string, ScanKey>
+    {
+        // Row 1 — number row
+        ["`"] = new(0x29, false),
+        ["1"] = new(0x02, false),
+        ["2"] = new(0x03, false),
+        ["3"] = new(0x04, false),
+        ["4"] = new(0x05, false),
+        ["5"] = new(0x06, false),
+        ["6"] = new(0x07, false),
+        ["7"] = new(0x08, false),
+        ["8"] = new(0x09, false),
+        ["9"] = new(0x0A, false),
+        ["0"] = new(0x0B, false),
+        ["-"] = new(0x0C, false),
+        ["="] = new(0x0D, false),
+        ["Backspace"] = new(0x0E, false),
+
+        // Row 2 — QWERTY top
+        ["Tab"] = new(0x0F, false),
+        ["Q"] = new(0x10, false),
+        ["W"] = new(0x11, false),
+        ["E"] = new(0x12, false),
+        ["R"] = new(0x13, false),
+        ["T"] = new(0x14, false),
+        ["Y"] = new(0x15, false),
+        ["U"] = new(0x16, false),
+        ["I"] = new(0x17, false),
+        ["O"] = new(0x18, false),
+        ["P"] = new(0x19, false),
+        ["["] = new(0x1A, false),
+        ["]"] = new(0x1B, false),
+        ["\\"] = new(0x2B, false),
+
+        // Row 3 — home row
+        ["CapsLock"] = new(0x3A, false),
+        ["A"] = new(0x1E, false),
+        ["S"] = new(0x1F, false),
+        ["D"] = new(0x20, false),
+        ["F"] = new(0x21, false),
+        ["G"] = new(0x22, false),
+        ["H"] = new(0x23, false),
+        ["J"] = new(0x24, false),
+        ["K"] = new(0x25, false),
+        ["L"] = new(0x26, false),
+        [";"] = new(0x27, false),
+        ["'"] = new(0x28, false),
+        ["Enter"] = new(0x1C, false),
+
+        // Row 4 — bottom letter row (↑ lives here per CR-03)
+        ["Shift_L"] = new(0x2A, false),
+        ["Z"] = new(0x2C, false),
+        ["X"] = new(0x2D, false),
+        ["C"] = new(0x2E, false),
+        ["V"] = new(0x2F, false),
+        ["B"] = new(0x30, false),
+        ["N"] = new(0x31, false),
+        ["M"] = new(0x32, false),
+        [","] = new(0x33, false),
+        ["."] = new(0x34, false),
+        ["/"] = new(0x35, false),
+        ["Shift_R"] = new(0x36, false),
+        ["Up"] = new(0x48, true),
+
+        // Row 5 — modifier row (← → ↓ live here per CR-03)
+        ["Ctrl_L"] = new(0x1D, false),
+        ["Super_L"] = new(0x5B, true),
+        ["Alt_L"] = new(0x38, false),
+        ["Space"] = new(0x39, false),
+        ["Alt_R"] = new(0x38, true),
+        ["Super_R"] = new(0x5C, true),
+        ["Ctrl_R"] = new(0x1D, true),
+        ["Left"] = new(0x4B, true),
+        ["Right"] = new(0x4D, true),
+        ["Down"] = new(0x50, true),
+    };
+}
