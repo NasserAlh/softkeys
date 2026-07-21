@@ -119,6 +119,75 @@ public partial class MainWindow : Window
         // actual SetWindowDisplayAffinity result so it never lies.
         if (_settings.CaptureExcluded)
             CaptureToggle.IsChecked = WindowStyles.SetCaptureExclusion(_hwnd, excluded: true);
+
+        HwndSource.FromHwnd(_hwnd)?.AddHook(WndProc);
+    }
+
+    protected override void OnStateChanged(EventArgs e)
+    {
+        // An OSK has no meaningful maximized/minimized-to-fullscreen state;
+        // revert so the window can never get stuck filling the screen.
+        if (WindowState != WindowState.Normal)
+            WindowState = WindowState.Normal;
+        base.OnStateChanged(e);
+    }
+
+    // -- Borderless resize (F-11) -------------------------------------------
+
+    private const int WM_NCHITTEST = 0x0084;
+    private const int WM_NCLBUTTONDBLCLK = 0x00A3;
+    private const int HTCLIENT = 1;
+    private const int HTCAPTION = 2;
+    private const double ResizeBand = 8.0; // DIPs; PMv2 conversion via PointFromScreen
+
+    /// <summary>
+    /// In-process subclass of our own HWND only (HwndSource.AddHook) — not a
+    /// window hook in the SetWindowsHookEx/NF-01 sense; no other process is
+    /// ever touched. Maps the borderless window's edge band to system resize
+    /// hit codes and swallows caption double-clicks from DragMove.
+    /// </summary>
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        switch (msg)
+        {
+            case WM_NCHITTEST when WindowState == WindowState.Normal:
+                int hit = HitTestResizeBand(lParam);
+                if (hit != HTCLIENT)
+                {
+                    handled = true;
+                    return new IntPtr(hit);
+                }
+                break;
+
+            case WM_NCLBUTTONDBLCLK when wParam.ToInt64() == HTCAPTION:
+                handled = true;
+                break;
+        }
+
+        return IntPtr.Zero;
+    }
+
+    private int HitTestResizeBand(IntPtr lParam)
+    {
+        long lp = lParam.ToInt64();
+        int screenX = unchecked((short)(lp & 0xFFFF));
+        int screenY = unchecked((short)((lp >> 16) & 0xFFFF));
+        Point p = PointFromScreen(new Point(screenX, screenY));
+
+        bool left = p.X < ResizeBand;
+        bool right = p.X > ActualWidth - ResizeBand;
+        bool top = p.Y < ResizeBand;
+        bool bottom = p.Y > ActualHeight - ResizeBand;
+
+        if (top && left) return 13;     // HTTOPLEFT
+        if (top && right) return 14;    // HTTOPRIGHT
+        if (bottom && left) return 16;  // HTBOTTOMLEFT
+        if (bottom && right) return 17; // HTBOTTOMRIGHT
+        if (left) return 10;            // HTLEFT
+        if (right) return 11;           // HTRIGHT
+        if (top) return 12;             // HTTOP
+        if (bottom) return 15;          // HTBOTTOM
+        return HTCLIENT;
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -302,7 +371,9 @@ public partial class MainWindow : Window
 
     private void OnDragBarMouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (e.ChangedButton == MouseButton.Left)
+        // Single clicks only: a double-click would reach the OS as a caption
+        // double-click (DragMove reports HTCAPTION) and toggle maximize.
+        if (e.ChangedButton == MouseButton.Left && e.ClickCount == 1)
             DragMove();
     }
 
