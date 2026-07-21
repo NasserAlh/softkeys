@@ -3,26 +3,30 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="softkeys"
         Width="900" Height="320"
+        MinWidth="450" MinHeight="220"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
-        ResizeMode="NoResize"
+        ResizeMode="CanResizeWithGrip"
         ShowActivated="False"
         Focusable="False"
         WindowStartupLocation="CenterScreen">
 
-    <!-- R-02: nothing in this window may ever take focus -->
+    <!-- R-02: nothing in this window may ever take focus.
+         Foregrounds are DynamicResource so the contrast switch (F-09) retints everything. -->
     <Window.Resources>
+        <SolidColorBrush x:Key="KeyForeground" Color="White" />
+        <SolidColorBrush x:Key="HeaderForeground" Color="#CCCCCC" />
         <Style TargetType="Button">
             <Setter Property="Focusable" Value="False" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="BorderBrush" Value="#66FFFFFF" />
+            <Setter Property="Foreground" Value="{DynamicResource KeyForeground}" />
+            <Setter Property="BorderBrush" Value="#66888888" />
             <Setter Property="FontSize" Value="15" />
         </Style>
         <Style TargetType="CheckBox">
             <Setter Property="Focusable" Value="False" />
-            <Setter Property="Foreground" Value="#CCCCCC" />
+            <Setter Property="Foreground" Value="{DynamicResource HeaderForeground}" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style TargetType="Slider">
@@ -30,7 +34,11 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#CCCCCC" />
+            <Setter Property="Foreground" Value="{DynamicResource HeaderForeground}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Focusable" Value="False" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
     </Window.Resources>
@@ -38,26 +46,32 @@
     <Border x:Name="RootBorder" CornerRadius="6" Background="#E6000000">
         <DockPanel Margin="6">
 
-            <!-- Temporary M2/M3 control strip; becomes the collapsible header bar at M4 (F-09) -->
+            <!-- F-09 header bar: everything except ☰ and ✕ collapses behind the ☰ toggle -->
             <DockPanel x:Name="DragBar" DockPanel.Dock="Top" Height="32"
                        Background="Transparent"
                        MouseLeftButtonDown="OnDragBarMouseDown">
                 <Button x:Name="CloseButton" DockPanel.Dock="Right" Width="40"
                         Content="✕" BorderThickness="0" Click="OnCloseClick" />
-                <TextBlock Text="softkeys" FontWeight="Bold" Margin="6,0,16,0" />
-                <CheckBox x:Name="CaptureToggle" Content="Hidden from capture"
-                          IsChecked="True"
-                          Checked="OnCaptureToggleChanged" Unchecked="OnCaptureToggleChanged" />
-                <TextBlock Text="Opacity" Margin="24,0,8,0" />
-                <Slider x:Name="OpacitySlider" Width="140"
-                        Minimum="0" Maximum="1"
-                        SmallChange="0.01" LargeChange="0.10"
-                        Value="0.90"
-                        ValueChanged="OnOpacityChanged" />
-                <TextBlock x:Name="OpacityLabel" Margin="8,0,0,0" Text="0.90" />
+                <Button x:Name="MenuButton" DockPanel.Dock="Left" Width="40"
+                        Content="☰" BorderThickness="0" Click="OnMenuToggle" />
+                <TextBlock Text="softkeys" FontWeight="Bold" Margin="8,0,16,0" />
+                <StackPanel x:Name="HeaderControls" Orientation="Horizontal" Visibility="Collapsed">
+                    <CheckBox x:Name="CaptureToggle" Content="Hidden from capture"
+                              Checked="OnCaptureToggleChanged" Unchecked="OnCaptureToggleChanged" />
+                    <TextBlock Text="Color" Margin="24,0,8,0" />
+                    <ComboBox x:Name="PaletteCombo" Width="110"
+                              SelectionChanged="OnPaletteChanged" />
+                    <TextBlock Text="Opacity" Margin="24,0,8,0" />
+                    <Slider x:Name="OpacitySlider" Width="140"
+                            Minimum="0" Maximum="1"
+                            SmallChange="0.01" LargeChange="0.10"
+                            ValueChanged="OnOpacityChanged" />
+                    <TextBlock x:Name="OpacityLabel" Margin="8,0,0,0" Text="0.90" />
+                </StackPanel>
             </DockPanel>
 
-            <!-- F-04: five rows, 30 star columns; populated from KeyMap in code (D-01) -->
+            <!-- F-04: five rows, 30 star columns; populated from KeyMap in code (D-01).
+                 Star sizing gives proportional key scaling on resize (F-11). -->
             <Grid x:Name="KeyGrid" />
 
         </DockPanel>

@@ -6,7 +6,10 @@ queries other processes. Draw buttons; on press, inject via `SendInput`; done.
 Authoritative specification: [docs/softkeys-sdlc.md](docs/softkeys-sdlc.md).
 Behavioral reference (layout, sticky modifiers, auto-repeat): `reference/vboard.py`.
 
-**Status:** M2 — window shell (NOACTIVATE, topmost-once, capture exclusion, opacity).
+**Status:** M4 — settings & polish (header bar, palette, persistence, resize, DPI).
+
+Settings persist to `%APPDATA%\softkeys\settings.json`; corrupt or missing
+files fall back to defaults silently.
 
 ## Build
 
