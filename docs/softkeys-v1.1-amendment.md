@@ -4,7 +4,7 @@
 **Amendment:** A1 — Bilingual keycaps, case-aware labels, function row
 **Baseline:** v1.0.0 (released 2026-07-21, commit `92174e7`, final records `cd4624c`)
 **Version target:** v1.1.0
-**Status:** Adopted — Gate A0 approved 2026-07-21 (baseline CR-16); M7 in progress
+**Status:** Adopted — Gate A0 approved 2026-07-21 (baseline CR-16); Gate A1 approved 2026-07-21 — M7 complete, M8 in progress
 
 This amendment extends the baseline SDLC document (`docs/softkeys-sdlc.md`). All baseline rules remain in force: governance model (§1), NF-01 forbidden-API list, evidence-before-mutation, per-gate tags. On adoption, this file is committed as `docs/softkeys-v1.1-amendment.md` and recorded as CR-16 in baseline §9.
 
@@ -93,3 +93,4 @@ On adoption: record CR-16 (this amendment) in baseline §9; move E-01 and E-03 f
 |---|---|---|---|
 | 2026-07-21 | A1 | v1.1 amendment drafted | pending Gate A0 |
 | 2026-07-21 | A1 | **Gate A0 approved** — amendment adopted, recorded as CR-16 in baseline §9 | Approved — Nasser |
+| 2026-07-21 | A1 | **Gate A1 approved — M7 complete.** Capsprobe confirmed D-09; T-10–T-13 witnessed (full record in baseline §9); selftest 198/198; tagged `m7-v11-implementation` | Approved — Nasser |

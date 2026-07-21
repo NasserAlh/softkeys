@@ -3,7 +3,7 @@
 **Project:** softkeys — Custom On-Screen Keyboard for Windows 11
 **Stack:** C# / WPF / .NET 8 (self-contained single-file publish)
 **Version:** Draft 1.0 — 2026-07-21
-**Status:** v1.1 (A1) — M7 in progress. Gate A0 approved 2026-07-21 (CR-16, `docs/softkeys-v1.1-amendment.md`). v1.0.0 released and tagged; GitHub is the sole remote of record per CR-17.
+**Status:** v1.1 (A1) — Gate A1 approved 2026-07-21; M7 complete, M8 (v1.1.0 release) in progress. Gate A0 approved 2026-07-21 (CR-16, `docs/softkeys-v1.1-amendment.md`). v1.0.0 released and tagged; GitHub is the sole remote of record per CR-17.
 
 ---
 
@@ -219,3 +219,4 @@ Each milestone = one commit series + gate review by Approver before the next sta
 | 2026-07-21 | — | **FINAL ACCEPTANCE.** All §2.3 success criteria witnessed: zero freezes across soak and capture tests, screenshot invisibility, typing in daily applications, EN and AR both proven. softkeys v1.0.0 accepted; remaining items live in the §8 backlog. | **Signed off — Nasser** |
 | 2026-07-21 | CR-17 | **cgit remote removed; GitHub is the system of record.** `github.com/NasserAlh/softkeys` is the sole remote from this date; NF-07 amended from self-hosted cgit to GitHub. The bare repo on `git.nasserhub.net` is untouched and remains a frozen archive of v1.0.0 (through commit `ed83f02` + all tags); its deletion, if ever, is a separate Approver decision. §7 step 3 marked superseded. (CR-16 remains reserved for Amendment A1 adoption at Gate A0.) | Approved — Nasser |
 | 2026-07-21 | CR-16 | **Amendment A1 adopted — Gate A0 approved.** `docs/softkeys-v1.1-amendment.md` in force: F-12 dual-script keycaps, F-13 case-aware labels + CapsLock indicator, F-14 permanent function row; D-09..D-13; T-10..T-13; milestones M7/M8, gates A0–A2. Display-layer only; input path unchanged. E-01/E-03 moved from §8; L-05 added to §3.3. | Approved — Nasser |
+| 2026-07-21 | — | **Gate A1 / M7 approved.** D-09 open question settled by witnessed capsprobe: `GetKeyState(VK_CAPITAL)` tracked physical CapsLock toggles live on the NOACTIVATE thread — D-09 confirmed as designed, no fallback needed. Witnessed: T-10 (full Arabic letter row matches keycaps + 5 spot-checks; both glyphs legible at min height), T-11 (all four label states correct with matching typed output; CapsLock highlight working), T-12 (Esc, F5, F2, armed Alt+F4), T-13 regression green (capture invisibility, focus, auto-repeat, settings round-trip at new heights). Extended selftest 198/198. Tagged `m7-v11-implementation`. | Approved — Nasser |
