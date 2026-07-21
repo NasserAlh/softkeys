@@ -52,6 +52,8 @@
                        MouseLeftButtonDown="OnDragBarMouseDown">
                 <Button x:Name="CloseButton" DockPanel.Dock="Right" Width="40"
                         Content="✕" BorderThickness="0" Click="OnCloseClick" />
+                <Button x:Name="MinimizeButton" DockPanel.Dock="Right" Width="40"
+                        Content="—" BorderThickness="0" Click="OnMinimizeClick" />
                 <Button x:Name="MenuButton" DockPanel.Dock="Left" Width="40"
                         Content="☰" BorderThickness="0" Click="OnMenuToggle" />
                 <TextBlock Text="softkeys" FontWeight="Bold" Margin="8,0,16,0" />

@@ -121,6 +121,7 @@ public partial class MainWindow : Window
         // D-04: earliest point where the HWND exists.
         _hwnd = new WindowInteropHelper(this).Handle;
         WindowStyles.ApplyNoActivate(_hwnd);
+        WindowStyles.RemoveMaximizeCapability(_hwnd); // F-20 snap immunity (D-20)
         WindowStyles.ApplyTopmostOnce(_hwnd);
 
         // F-01 per persisted setting (default ON); the checkbox reflects the
@@ -133,9 +134,10 @@ public partial class MainWindow : Window
 
     protected override void OnStateChanged(EventArgs e)
     {
-        // An OSK has no meaningful maximized/minimized-to-fullscreen state;
-        // revert so the window can never get stuck filling the screen.
-        if (WindowState != WindowState.Normal)
+        // CR-13 as narrowed by D-19: an OSK has no meaningful maximized state,
+        // so Maximized reverts; Minimized is a legal state (F-19) and restore
+        // is the user's taskbar click.
+        if (WindowState == WindowState.Maximized)
             WindowState = WindowState.Normal;
         base.OnStateChanged(e);
     }
@@ -470,6 +472,11 @@ public partial class MainWindow : Window
         if (e.ChangedButton == MouseButton.Left && e.ClickCount == 1)
             DragMove();
     }
+
+    // F-19: standard taskbar minimize; NOACTIVATE/topmost/capture styles are
+    // window styles and persist across the minimize/restore round trip.
+    private void OnMinimizeClick(object sender, RoutedEventArgs e) =>
+        WindowState = WindowState.Minimized;
 
     private void OnCloseClick(object sender, RoutedEventArgs e) => Close();
 }

@@ -10,7 +10,9 @@ namespace Softkeys.Native;
 /// </summary>
 public static class WindowStyles
 {
+    internal const int GWL_STYLE = -16;
     internal const int GWL_EXSTYLE = -20;
+    internal const long WS_MAXIMIZEBOX = 0x00010000;
     internal const long WS_EX_TOPMOST = 0x00000008;
     internal const long WS_EX_NOACTIVATE = 0x08000000;
 
@@ -54,6 +56,19 @@ public static class WindowStyles
     /// </summary>
     public static bool ApplyTopmostOnce(IntPtr hwnd) =>
         SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+    /// <summary>
+    /// F-20 (D-20): clearing WS_MAXIMIZEBOX withdraws the window from shell
+    /// Snap participation (edge/corner snap, Snap Layouts, Win+arrow), so
+    /// dragging against a screen edge just moves it. Resize capability is a
+    /// separate style bit and keeps the CR-12 edge band working — verified by
+    /// T-18, not assumed.
+    /// </summary>
+    public static void RemoveMaximizeCapability(IntPtr hwnd)
+    {
+        long style = GetWindowLongPtr(hwnd, GWL_STYLE).ToInt64();
+        SetWindowLongPtr(hwnd, GWL_STYLE, new IntPtr(style & ~WS_MAXIMIZEBOX));
+    }
 
     /// <summary>
     /// F-01: when excluded, the window is absent from screenshots and
