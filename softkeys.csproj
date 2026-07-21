@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- Console Exe for M1 (self-test runner + Notepad harness); becomes WinExe at M2 -->
-    <OutputType>Exe</OutputType>
+    <!-- WinExe from M2 on: no console window for the keyboard itself.
+         The selftest/harness modes reattach to the parent console in Program. -->
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <RootNamespace>Softkeys</RootNamespace>

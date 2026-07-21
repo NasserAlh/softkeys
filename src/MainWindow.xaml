@@ -1,0 +1,16 @@
+<Window x:Class="Softkeys.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="softkeys"
+        Width="880" Height="240"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowActivated="False"
+        Focusable="False"
+        WindowStartupLocation="CenterScreen">
+
+    <Border x:Name="RootBorder" CornerRadius="6" Background="#E6000000" />
+
+</Window>
