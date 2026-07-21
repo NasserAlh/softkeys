@@ -3,7 +3,7 @@
 **Project:** softkeys — Custom On-Screen Keyboard for Windows 11
 **Stack:** C# / WPF / .NET 8 (self-contained single-file publish)
 **Version:** Draft 1.0 — 2026-07-21
-**Status:** M1 approved and tagged `m1-native-core` 2026-07-21 (see §9); M2 in progress
+**Status:** M2 approved and tagged `m2-window-shell` 2026-07-21 (see §9); M3 in progress
 
 ---
 
@@ -196,3 +196,6 @@ Each milestone = one commit series + gate review by Approver before the next sta
 | 2026-07-21 | CR-05 | **Tooling note.** .NET SDK 8.0.423 installed user-local at `%LOCALAPPDATA%\Microsoft\dotnet` via the official install script; no elevation, profile-contained. Tooling only — not product scope. | Approved — Nasser |
 | 2026-07-21 | CR-06 | **Status-line maintenance authorized as routine.** The document status line is kept current at each gate without further CRs. | Approved — Nasser |
 | 2026-07-21 | — | **Gate 2 / M1 approved.** Witnessed run: selftest 111/111 green; harness typed "test" into Notepad under Approver focus. Tagged `m1-native-core`. | Approved — Nasser |
+| 2026-07-21 | CR-07 | **WinExe output type** with AttachConsole/AllocConsole plumbing so `--selftest`/`--harness` remain console modes while the keyboard opens no console window. | Approved — Nasser |
+| 2026-07-21 | CR-08 | **Harness abort cleanup:** spawned Notepad closed via PID-diff + graceful WM_CLOSE, best-effort (Win11 stub hand-off). Closes the M1 polish item. | Approved — Nasser |
+| 2026-07-21 | — | **Gate 2 / M2 approved.** Witnessed: T-01 (10 snips, zero freezes, keyboard absent, toggle reappearance confirmed) and T-02 (20 keys, focus never left target). Tagged `m2-window-shell`. | Approved — Nasser |
