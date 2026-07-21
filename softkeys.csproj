@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Console Exe for M1 (self-test runner + Notepad harness); becomes WinExe at M2 -->
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Softkeys</RootNamespace>
+    <AssemblyName>softkeys</AssemblyName>
+    <StartupObject>Softkeys.Program</StartupObject>
+    <!-- win-x64 only (NF-03); pinned so the D-08 struct assertions are deterministic -->
+    <PlatformTarget>x64</PlatformTarget>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
