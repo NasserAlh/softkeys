@@ -43,9 +43,11 @@ internal static class InputInjectorTests
     {
         IReadOnlyDictionary<string, ScanKey> table = ScanCodeTable.Keys;
 
-        // The five v1 rows per F-04 + CR-03 (vboard.py arrangement authoritative).
+        // The five v1 rows per F-04 + CR-03 (vboard.py arrangement authoritative)
+        // plus the F-14 function row (Amendment A1).
         string[][] layoutRows =
         {
+            new[] { "Esc", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12" },
             new[] { "`", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=", "Backspace" },
             new[] { "Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\\" },
             new[] { "CapsLock", "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'", "Enter" },
@@ -54,7 +56,7 @@ internal static class InputInjectorTests
         };
 
         string[] layoutKeys = layoutRows.SelectMany(r => r).ToArray();
-        Check("layout defines 64 keys", layoutKeys.Length == 64);
+        Check("layout defines 77 keys", layoutKeys.Length == 77);
         Check("layout has no duplicate key names", layoutKeys.Distinct().Count() == layoutKeys.Length);
 
         foreach (string name in layoutKeys)
@@ -84,6 +86,7 @@ internal static class InputInjectorTests
             ("Ctrl_L", 0x1D), ("Alt_L", 0x38), ("Space", 0x39),
             ("Up", 0x48), ("Down", 0x50), ("Left", 0x4B), ("Right", 0x4D),
             ("Super_L", 0x5B), ("T", 0x14), ("E", 0x12), ("S", 0x1F),
+            ("Esc", 0x01), ("F1", 0x3B), ("F10", 0x44), ("F11", 0x57), ("F12", 0x58),
         };
         foreach ((string name, ushort code) in spots)
             Check($"'{name}' is 0x{code:X2}", table[name].Code == code);

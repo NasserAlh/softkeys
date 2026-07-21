@@ -127,14 +127,29 @@ public static class InputInjector
 }
 
 /// <summary>
-/// Scan codes (PC/AT set 1) for every key in the v1 layout (F-04 per CR-03).
-/// Key names follow vboard.py so KeyMap (M3) maps one-to-one; arrows use
-/// Up/Down/Left/Right instead of glyphs.
+/// Scan codes (PC/AT set 1) for every key in the layout (F-04 per CR-03;
+/// function row added by F-14/Amendment A1). Key names follow vboard.py so
+/// KeyMap maps one-to-one; arrows use Up/Down/Left/Right instead of glyphs.
 /// </summary>
 public static class ScanCodeTable
 {
     public static readonly IReadOnlyDictionary<string, ScanKey> Keys = new Dictionary<string, ScanKey>
     {
+        // Row 0 — function row (F-14): standard non-extended codes
+        ["Esc"] = new(0x01, false),
+        ["F1"] = new(0x3B, false),
+        ["F2"] = new(0x3C, false),
+        ["F3"] = new(0x3D, false),
+        ["F4"] = new(0x3E, false),
+        ["F5"] = new(0x3F, false),
+        ["F6"] = new(0x40, false),
+        ["F7"] = new(0x41, false),
+        ["F8"] = new(0x42, false),
+        ["F9"] = new(0x43, false),
+        ["F10"] = new(0x44, false),
+        ["F11"] = new(0x57, false),
+        ["F12"] = new(0x58, false),
+
         // Row 1 — number row
         ["`"] = new(0x29, false),
         ["1"] = new(0x02, false),

@@ -19,11 +19,12 @@ internal static class KeyMapTests
         IReadOnlyList<IReadOnlyList<KeyDef>> rows = KeyMap.Rows;
         KeyDef[] all = rows.SelectMany(r => r).ToArray();
 
-        Check("five rows (F-04)", rows.Count == 5);
-        for (int i = 0; i < rows.Count; i++)
-            Check($"row {i + 1} spans 30 star units", rows[i].Sum(k => k.Width) == 30);
+        Check("six rows (F-04 + F-14)", rows.Count == 6);
+        Check("function row spans 27 star units (Esc 3 + 12x2)", rows[0].Sum(k => k.Width) == 27);
+        for (int i = 1; i < rows.Count; i++)
+            Check($"row {i} spans 30 star units", rows[i].Sum(k => k.Width) == 30);
 
-        Check("64 keys total", all.Length == 64);
+        Check("77 keys total", all.Length == 77);
         Check("key names unique", all.Select(k => k.Name).Distinct().Count() == all.Length);
         Check("every key resolves in ScanCodeTable",
             all.All(k => ScanCodeTable.Keys.ContainsKey(k.Name)));
@@ -54,9 +55,44 @@ internal static class KeyMapTests
         {
             ("Space", 12), ("CapsLock", 3), ("Shift_L", 4), ("Shift_R", 4),
             ("Backspace", 5), ("Enter", 5), ("`", 1), ("\\", 4), ("Q", 2), ("Ctrl_L", 2),
+            ("Esc", 3), ("F5", 2),
         };
         foreach ((string name, int width) in widths)
             Check($"'{name}' width {width}", all.Single(k => k.Name == name).Width == width);
+
+        // F-14: function row shape — 13 plain keys, Esc wider, F1..F12 equal.
+        IReadOnlyList<KeyDef> fRow = rows[0];
+        Check("function row has 13 keys", fRow.Count == 13);
+        Check("function row order Esc, F1..F12",
+            fRow.Select(k => k.Name).SequenceEqual(
+                new[] { "Esc" }.Concat(Enumerable.Range(1, 12).Select(n => $"F{n}"))));
+        Check("F1..F12 share one width", fRow.Skip(1).All(k => k.Width == 2));
+        Check("function row keys are plain (no modifier/shift/Arabic)",
+            fRow.All(k => k is { IsModifier: false, ShiftLabel: null, Arabic: null }));
+
+        // F-12: dual-script caps — exactly the keys that differ under Arabic (101).
+        string[] expectedDual =
+        {
+            "`",
+            "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]",
+            "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'",
+            "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/",
+        };
+        string[] actualDual = all.Where(k => !string.IsNullOrEmpty(k.Arabic)).Select(k => k.Name).ToArray();
+        Check("exactly 34 dual-script keys", actualDual.Length == 34);
+        Check("dual-script key set matches Arabic (101) difference set",
+            actualDual.OrderBy(n => n, StringComparer.Ordinal)
+                .SequenceEqual(expectedDual.OrderBy(n => n, StringComparer.Ordinal)));
+        Check("no dual key has an empty Arabic glyph",
+            all.Where(k => k.Arabic is not null).All(k => k.Arabic!.Length > 0));
+
+        // Spot checks against the Windows Arabic (101) layout.
+        (string Name, string Glyph)[] arabicSpots =
+        {
+            ("D", "ي"), ("Q", "ض"), ("B", "لا"), ("`", "ذ"), (";", "ك"), ("/", "ظ"), ("H", "ا"),
+        };
+        foreach ((string name, string glyph) in arabicSpots)
+            Check($"'{name}' Arabic glyph is '{glyph}'", all.Single(k => k.Name == name).Arabic == glyph);
 
         // Labels: modifiers drop the _L/_R suffix; arrows are glyphs.
         Check("modifier labels drop side suffix",
