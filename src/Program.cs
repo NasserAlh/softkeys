@@ -12,6 +12,7 @@ internal static class Program
         return args.FirstOrDefault() switch
         {
             "--selftest" => Tests.InputInjectorTests.RunAll(),
+            "--harness" => Harness.Run(),
             _ => Usage(),
         };
     }
