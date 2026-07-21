@@ -21,6 +21,7 @@ internal static class Program
                 Tests.InputInjectorTests.RunAll() + Tests.KeyMapTests.RunAll() + Tests.SettingsTests.RunAll()),
             "--harness" => WithConsole(Harness.Run),
             "--capsprobe" => WithConsole(Harness.RunCapsProbe),
+            "--altprobe" => WithConsole(Harness.RunAltProbe),
             _ => WithConsole(Usage),
         };
     }

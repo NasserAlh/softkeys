@@ -128,6 +128,117 @@ internal static class Harness
         return 0;
     }
 
+    /// <summary>
+    /// DF-01 diagnostic: reproduces armed Alt+F4 against a spawned Notepad
+    /// window and, if the production one-batch injection fails to close it,
+    /// re-tries the identical events split across separate SendInput calls
+    /// with small gaps. Discriminates "Alt chord broken" from "zero-gap batch
+    /// vs. apps that read modifier state asynchronously at processing time".
+    /// Same focus guard as the M1 harness; foreground query and IsWindow are
+    /// harness-only code, never the product input path (NF-01).
+    /// </summary>
+    public static int RunAltProbe()
+    {
+        Console.WriteLine("altprobe: DF-01 reproduction — armed Alt+F4 against a spawned Notepad window.");
+
+        HashSet<int> preexisting = NotepadProcesses().Select(p => p.Id).ToHashSet();
+
+        try
+        {
+            Process.Start("notepad.exe");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Could not launch Notepad: {ex.Message}");
+            return 1;
+        }
+
+        Console.WriteLine("Waiting up to 10 s for Notepad to take focus");
+        Console.WriteLine("(click the Notepad window if it does not come to the front by itself)...");
+        string? foreground = null;
+        for (int attempt = 0; attempt < 40; attempt++)
+        {
+            Thread.Sleep(250);
+            foreground = ForegroundProcessName();
+            if (IsNotepad(foreground))
+                break;
+        }
+
+        if (!IsNotepad(foreground))
+        {
+            Console.Error.WriteLine(
+                $"Foreground window is '{foreground ?? "unknown"}', not Notepad — refusing to inject.");
+            CloseSpawnedNotepad(preexisting);
+            return 1;
+        }
+
+        IntPtr target = GetForegroundWindow();
+        ScanKey f4 = ScanCodeTable.Keys["F4"];
+        ScanKey alt = ScanCodeTable.Keys["Alt_L"];
+
+        // A — the exact production path: one SendInput batch (D-03).
+        Console.WriteLine("A: one-batch Alt down, F4 down, F4 up, Alt up (production Tap path)...");
+        if (!InputInjector.Tap(f4, new[] { alt }))
+        {
+            Console.Error.WriteLine("SendInput rejected the batch.");
+            CloseSpawnedNotepad(preexisting);
+            return 1;
+        }
+        bool closedA = WaitForWindowGone(target, 2000);
+        Console.WriteLine($"A: window {(closedA ? "CLOSED — DF-01 does not reproduce here" : "STILL OPEN — DF-01 reproduced")}");
+
+        bool closedB = false;
+        if (!closedA)
+        {
+            if (GetForegroundWindow() != target || !IsNotepad(ForegroundProcessName()))
+            {
+                Console.Error.WriteLine("Foreground changed between sub-tests — refusing to continue.");
+                CloseSpawnedNotepad(preexisting);
+                return 1;
+            }
+
+            // B — identical events, separate SendInput calls with gaps, so the
+            // target processes F4 while Alt is still logically down system-wide.
+            Console.WriteLine("B: same events split across SendInput calls with 60 ms gaps...");
+            bool sent = InputInjector.EmitSingle(alt, up: false);
+            Thread.Sleep(60);
+            sent &= InputInjector.EmitSingle(f4, up: false);
+            sent &= InputInjector.EmitSingle(f4, up: true);
+            Thread.Sleep(60);
+            sent &= InputInjector.EmitSingle(alt, up: true);
+            if (!sent)
+                Console.Error.WriteLine("SendInput rejected one or more events.");
+
+            closedB = WaitForWindowGone(target, 2000);
+            Console.WriteLine($"B: window {(closedB ? "CLOSED" : "STILL OPEN")}");
+        }
+
+        CloseSpawnedNotepad(preexisting);
+
+        Console.WriteLine();
+        if (closedA)
+            Console.WriteLine("Verdict: production path works against Notepad here — DF-01 is environmental or UI-path specific; probe again under the launch-check conditions.");
+        else if (closedB)
+            Console.WriteLine("Verdict: root cause confirmed — the zero-gap one-batch injection; Notepad reads Alt asynchronously at processing time, after batch Alt-up already happened.");
+        else
+            Console.WriteLine("Verdict: Alt+F4 failed in BOTH forms — batching is not the cause; the Alt injection itself does not register. Hypothesis rejected.");
+        return 0;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindow(IntPtr hWnd);
+
+    private static bool WaitForWindowGone(IntPtr hwnd, int timeoutMs)
+    {
+        for (int waited = 0; waited < timeoutMs; waited += 100)
+        {
+            Thread.Sleep(100);
+            if (!IsWindow(hwnd))
+                return true;
+        }
+        return false;
+    }
+
     private static bool IsNotepad(string? processName) =>
         string.Equals(processName, "notepad", StringComparison.OrdinalIgnoreCase);
 

@@ -94,6 +94,17 @@ public static class InputInjector
     }
 
     /// <summary>
+    /// Harness/diagnostic only (altprobe): inject a single down or up event
+    /// as its own SendInput call. The product path always uses Tap — this
+    /// exists so a probe can vary batching/timing, never the keyboard itself.
+    /// </summary>
+    internal static bool EmitSingle(ScanKey key, bool up)
+    {
+        var sequence = new[] { KeyEvent(key, up) };
+        return SendInput(1, sequence, Marshal.SizeOf<INPUT>()) == 1;
+    }
+
+    /// <summary>
     /// D-03 ordering: press mods → press key → release key → release mods
     /// (reverse order). Internal so tests can verify ordering and flags
     /// without emitting real input.
