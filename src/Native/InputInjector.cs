@@ -11,7 +11,7 @@ public readonly record struct ScanKey(ushort Code, bool Extended);
 /// Stateless key injection via SendInput using scan codes (D-02, F-03).
 /// The active Windows keyboard layout translates scan codes to characters,
 /// so EN/AR both work without any layout knowledge here. Zero cross-process
-/// calls (NF-01): build the INPUT array, hand it to SendInput, done.
+/// calls (NF-01): build the INPUT batches, hand them to SendInput, done.
 /// </summary>
 public static class InputInjector
 {
@@ -82,15 +82,36 @@ public static class InputInjector
     public static bool IsCapsLockOn => (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
 
     /// <summary>
-    /// Injects a full tap — modifier downs, key down, key up, modifier ups —
-    /// as one SendInput call so physical input cannot interleave (D-03).
+    /// CR-18: the pause between the chord's three SendInput calls. 60 ms is
+    /// the value proven by the witnessed DF-01 altprobe (split-with-gaps
+    /// closed the window; zero-gap did not); a smaller value would need its
+    /// own witnessed probe to justify. Two gaps per chord = 120 ms once per
+    /// chord — repeats are unmodified (F-05), so repeat taps never pay it.
+    /// </summary>
+    internal const int ChordGapMs = 60;
+
+    /// <summary>
+    /// Injects a full tap. Plain taps are one SendInput call; chords are
+    /// three (modifier downs / key tap / modifier ups) with a ChordGapMs
+    /// pause between calls (D-03 as amended by CR-18) so targets that sample
+    /// modifier state asynchronously at processing time (DF-01, Win11
+    /// Notepad) still see the modifier held — the timing a physical hand
+    /// produces. Atomicity holds within each call, and the intra-chord sleeps
+    /// block our own UI thread, so our next click cannot interleave either.
     /// Returns true when every event was accepted by the system.
     /// </summary>
     public static bool Tap(ScanKey key, IReadOnlyList<ScanKey>? modifiers = null)
     {
-        INPUT[] sequence = BuildTapSequence(key, modifiers ?? Array.Empty<ScanKey>());
-        uint sent = SendInput((uint)sequence.Length, sequence, Marshal.SizeOf<INPUT>());
-        return sent == sequence.Length;
+        INPUT[][] batches = BuildBatches(key, modifiers ?? Array.Empty<ScanKey>());
+
+        bool ok = true;
+        for (int b = 0; b < batches.Length; b++)
+        {
+            if (b > 0)
+                Thread.Sleep(ChordGapMs);
+            ok &= SendInput((uint)batches[b].Length, batches[b], Marshal.SizeOf<INPUT>()) == batches[b].Length;
+        }
+        return ok;
     }
 
     /// <summary>
@@ -105,25 +126,25 @@ public static class InputInjector
     }
 
     /// <summary>
-    /// D-03 ordering: press mods → press key → release key → release mods
-    /// (reverse order). Internal so tests can verify ordering and flags
-    /// without emitting real input.
+    /// D-03 ordering (press mods → press key → release key → release mods,
+    /// reverse) split per CR-18: one batch for a plain tap; mod-downs / tap /
+    /// mod-ups for a chord. Internal so tests can verify structure, ordering,
+    /// and flags without emitting real input.
     /// </summary>
-    internal static INPUT[] BuildTapSequence(ScanKey key, IReadOnlyList<ScanKey> modifiers)
+    internal static INPUT[][] BuildBatches(ScanKey key, IReadOnlyList<ScanKey> modifiers)
     {
-        var sequence = new INPUT[modifiers.Count * 2 + 2];
-        int i = 0;
+        INPUT[] tap = { KeyEvent(key, up: false), KeyEvent(key, up: true) };
+        if (modifiers.Count == 0)
+            return new[] { tap };
 
+        var downs = new INPUT[modifiers.Count];
+        var ups = new INPUT[modifiers.Count];
         for (int m = 0; m < modifiers.Count; m++)
-            sequence[i++] = KeyEvent(modifiers[m], up: false);
-
-        sequence[i++] = KeyEvent(key, up: false);
-        sequence[i++] = KeyEvent(key, up: true);
-
-        for (int m = modifiers.Count - 1; m >= 0; m--)
-            sequence[i++] = KeyEvent(modifiers[m], up: true);
-
-        return sequence;
+        {
+            downs[m] = KeyEvent(modifiers[m], up: false);
+            ups[modifiers.Count - 1 - m] = KeyEvent(modifiers[m], up: true);
+        }
+        return new[] { downs, tap, ups };
     }
 
     private static INPUT KeyEvent(ScanKey key, bool up)

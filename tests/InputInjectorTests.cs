@@ -92,7 +92,10 @@ internal static class InputInjectorTests
             Check($"'{name}' is 0x{code:X2}", table[name].Code == code);
     }
 
-    // D-03: mods down → key down → key up → mods up (reverse), one array.
+    // D-03 as amended by CR-18: plain taps stay one atomic batch; chords are
+    // three batches (mod downs / key tap / mod ups) so apps that sample
+    // modifier state asynchronously at processing time (DF-01) still see the
+    // modifier held while they process the key.
     private static void TapSequenceTests()
     {
         ScanKey a = ScanCodeTable.Keys["A"];
@@ -100,31 +103,42 @@ internal static class InputInjectorTests
         ScanKey ctrl = ScanCodeTable.Keys["Ctrl_L"];
         ScanKey up = ScanCodeTable.Keys["Up"];
 
-        INPUT[] plain = BuildTapSequence(a, Array.Empty<ScanKey>());
-        Check("plain tap is 2 events", plain.Length == 2);
+        INPUT[][] plain = BuildBatches(a, Array.Empty<ScanKey>());
+        Check("plain tap is a single batch (CR-18)", plain.Length == 1);
         Check("plain tap: down then up",
-            !IsUp(plain[0]) && IsUp(plain[1]) && plain.All(e => Scan(e) == a.Code));
+            plain[0].Length == 2 && !IsUp(plain[0][0]) && IsUp(plain[0][1]) &&
+            plain[0].All(e => Scan(e) == a.Code));
 
-        INPUT[] combo = BuildTapSequence(a, new[] { ctrl, shift });
-        Check("two-modifier tap is 6 events", combo.Length == 6);
-        Check("combo order: ctrl↓ shift↓ a↓ a↑ shift↑ ctrl↑",
-            Scan(combo[0]) == ctrl.Code && !IsUp(combo[0]) &&
-            Scan(combo[1]) == shift.Code && !IsUp(combo[1]) &&
-            Scan(combo[2]) == a.Code && !IsUp(combo[2]) &&
-            Scan(combo[3]) == a.Code && IsUp(combo[3]) &&
-            Scan(combo[4]) == shift.Code && IsUp(combo[4]) &&
-            Scan(combo[5]) == ctrl.Code && IsUp(combo[5]));
-        Check("all events are keyboard type", combo.All(e => e.type == INPUT_KEYBOARD));
+        INPUT[][] chord = BuildBatches(a, new[] { ctrl, shift });
+        Check("chord is three batches (CR-18)", chord.Length == 3);
+        Check("chord batch 1: modifier downs in order (ctrl↓ shift↓)",
+            chord[0].Length == 2 &&
+            Scan(chord[0][0]) == ctrl.Code && !IsUp(chord[0][0]) &&
+            Scan(chord[0][1]) == shift.Code && !IsUp(chord[0][1]));
+        Check("chord batch 2: key down then up (a↓ a↑)",
+            chord[1].Length == 2 &&
+            Scan(chord[1][0]) == a.Code && !IsUp(chord[1][0]) &&
+            Scan(chord[1][1]) == a.Code && IsUp(chord[1][1]));
+        Check("chord batch 3: modifier ups in reverse order (shift↑ ctrl↑)",
+            chord[2].Length == 2 &&
+            Scan(chord[2][0]) == shift.Code && IsUp(chord[2][0]) &&
+            Scan(chord[2][1]) == ctrl.Code && IsUp(chord[2][1]));
+
+        INPUT[] all = chord.SelectMany(b => b).ToArray();
+        Check("all events are keyboard type", all.All(e => e.type == INPUT_KEYBOARD));
         Check("all events carry KEYEVENTF_SCANCODE",
-            combo.All(e => (e.U.ki.dwFlags & KEYEVENTF_SCANCODE) != 0));
+            all.All(e => (e.U.ki.dwFlags & KEYEVENTF_SCANCODE) != 0));
         Check("wVk is 0 everywhere (scan-code injection, D-02)",
-            combo.All(e => e.U.ki.wVk == 0));
+            all.All(e => e.U.ki.wVk == 0));
 
-        INPUT[] nav = BuildTapSequence(up, Array.Empty<ScanKey>());
+        INPUT[][] nav = BuildBatches(up, Array.Empty<ScanKey>());
         Check("extended key carries KEYEVENTF_EXTENDEDKEY (D-05)",
-            nav.All(e => (e.U.ki.dwFlags & KEYEVENTF_EXTENDEDKEY) != 0));
+            nav[0].All(e => (e.U.ki.dwFlags & KEYEVENTF_EXTENDEDKEY) != 0));
         Check("non-extended key omits KEYEVENTF_EXTENDEDKEY",
-            plain.All(e => (e.U.ki.dwFlags & KEYEVENTF_EXTENDEDKEY) == 0));
+            plain[0].All(e => (e.U.ki.dwFlags & KEYEVENTF_EXTENDEDKEY) == 0));
+
+        Check("chord inter-call gap is bounded per CR-18 (1..60 ms)",
+            ChordGapMs is >= 1 and <= 60);
     }
 
     private static ushort Scan(INPUT e) => e.U.ki.wScan;
