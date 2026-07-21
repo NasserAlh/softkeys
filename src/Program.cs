@@ -17,7 +17,8 @@ internal static class Program
         return args.FirstOrDefault() switch
         {
             null => RunApp(),
-            "--selftest" => WithConsole(Tests.InputInjectorTests.RunAll),
+            "--selftest" => WithConsole(() =>
+                Tests.InputInjectorTests.RunAll() + Tests.KeyMapTests.RunAll()),
             "--harness" => WithConsole(Harness.Run),
             _ => WithConsole(Usage),
         };
