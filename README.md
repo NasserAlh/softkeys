@@ -15,6 +15,9 @@ softkeys exits that design category entirely. It is a **stateless input emitter*
 - **Invisible to screenshots and recordings** (toggleable) — uses `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)`, so the keyboard never appears in your captures. The built-in OSK can't do this.
 - **Never steals focus** — `WS_EX_NOACTIVATE`: clicking keys types into your app; your app stays active the whole time.
 - **Works with any keyboard layout, including RTL** — keys inject *scan codes*, so the active Windows layout decides the character. Switch to Arabic and the letter keys produce Arabic; no configuration.
+- **Dual-script keycaps** — every key that differs under the Arabic (101) layout shows both glyphs (Latin top-left, Arabic bottom-right), always visible. No layout detection, no switching — the cap already tells you what each layout will type.
+- **Case-aware labels with a CapsLock indicator** — letter caps show lowercase or uppercase to match what will actually be typed (Shift XOR CapsLock, like a real keyboard), and the CapsLock key highlights while active.
+- **Function row** — permanent `Esc` + `F1`–`F12` row that participates in sticky-modifier chords: arm Alt, tap F4.
 - **Freeze-proof by design** — no UI Automation, no hooks into other processes, no caret tracking, no TSF.
 - **Zero network code** — no telemetry, no update checks, no sockets. Auditable in minutes; the source is small.
 - **Single portable exe** — self-contained .NET 8, no installer, no prerequisites, runs as standard user.
@@ -23,7 +26,7 @@ softkeys exits that design category entirely. It is a **stateless input emitter*
 ## Install
 
 1. Download `softkeys.exe` from the [latest release](../../releases/latest).
-2. Verify the hash (published in the release notes; for v1.0.0: `860fefe9149116a2d0b46dacc223f808d1e78f98db73de7aa87f9213c0bc91bd`):
+2. Verify the hash (published in the release notes; for v1.1.0: `8372a463bcd3feb7c9a453f8b4fbbfe7107d87056a5c346b8746969f29ff62ef`):
    `certutil -hashfile softkeys.exe SHA256`
 3. Run it. No installation, no admin rights.
 
@@ -60,7 +63,8 @@ softkeys.exe --selftest
 - Some games with anti-cheat ignore injected input.
 - With capture invisibility ON, the keyboard is also invisible in **screen sharing** — toggle it off when presenting.
 - A bare Win-key tap can't open the Start menu (the sticky-latch model only injects modifiers as part of a chord); the Start button is one click away anyway.
-- Key labels are English-only for now; input follows the active layout regardless (Arabic tested end-to-end).
+- Arabic keycaps show the base (unshifted) glyph only — shifted Arabic characters (diacritics, tatweel, …) type correctly but aren't printed on the caps; three glyphs per key would hurt readability.
+- The CapsLock indicator refreshes on interaction with the keyboard (after each key and on pointer-enter), not on a timer — toggle CapsLock on the physical keyboard while softkeys is idle and the indicator catches up at your next hover or click. A polling timer is exactly the kind of background chatter this project avoids.
 
 ## Credits
 
