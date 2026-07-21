@@ -5,6 +5,10 @@
          The selftest/harness modes reattach to the parent console in Program. -->
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- D-17: single source of truth for the version; installer/build.ps1
+         injects it into the Inno script so exe, Apps & Features, and release
+         notes can never drift. -->
+    <Version>1.2.0</Version>
     <UseWPF>true</UseWPF>
     <RootNamespace>Softkeys</RootNamespace>
     <AssemblyName>softkeys</AssemblyName>

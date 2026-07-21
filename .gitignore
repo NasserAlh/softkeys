@@ -1,6 +1,7 @@
 bin/
 obj/
 publish/
+installer/output/
 *.user
 .vs/
 .vscode/
