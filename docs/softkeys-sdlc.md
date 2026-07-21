@@ -80,6 +80,7 @@ Build a **stateless input emitter**: a keyboard window that never queries other 
 - L-03: Key labels are English-only in v1; Arabic characters are produced correctly (F-03) but not displayed on keys. Backlog E-01.
 - L-04: Bare modifier taps are not injectable in the latch model — the second press of an armed modifier is a pure cancel, emitting nothing (CR-09). Start remains reachable via the taskbar.
 - L-05: Arabic keycaps show the base (unshifted) Arabic glyph only; shifted Arabic characters (diacritics, tatweel, etc.) are produced correctly when typed but are not displayed on the caps (Amendment A1). Revisit only on user demand.
+- L-06: The CapsLock indicator refreshes on softkeys' own events (after each emit, on pointer-enter) — never on a timer. Toggling CapsLock from the physical keyboard while softkeys is idle leaves the indicator stale until the next interaction. Deliberate consequence of the no-polling rule (D-10).
 
 **GATE 0 — Approver signs off on §3 before design begins.**
 
