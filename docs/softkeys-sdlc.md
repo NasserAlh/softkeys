@@ -3,7 +3,7 @@
 **Project:** softkeys — Custom On-Screen Keyboard for Windows 11
 **Stack:** C# / WPF / .NET 8 (self-contained single-file publish)
 **Version:** Draft 1.0 — 2026-07-21
-**Status:** M4 approved and tagged `m4-settings-polish` 2026-07-21 (see §9); M5 (release) in progress
+**Status:** Released — v1.0.0 accepted and tagged 2026-07-21 (see §9); published to cgit (`origin`) and the GitHub mirror (M6). Enhancements live in §8.
 
 ---
 
@@ -145,6 +145,7 @@ softkeys/
 | M3 — Full keyboard | Complete key grid, sticky modifiers, shift labels, auto-repeat | T-03 – T-06 pass |
 | M4 — Settings & polish | Header bar controls, persistence, resize scaling, DPI check | T-07 – T-09 pass |
 | M5 — Release | Single-file publish, README, repo pushed to cgit, tag `v1.0.0` | Exe hash recorded; acceptance sign-off |
+| M6 — Public mirror (CR-15) | Public GitHub repo `NasserAlh/softkeys` as second remote (`github`); `main` + all milestone tags + `v1.0.0` pushed after M5 acceptance | Repo public with `v1.0.0` visible; README hash matches released exe |
 
 Each milestone = one commit series + gate review by Approver before the next starts.
 
@@ -210,3 +211,7 @@ Each milestone = one commit series + gate review by Approver before the next sta
 | 2026-07-21 | CR-12 | **Borderless resize** via WM_NCHITTEST edge band through `HwndSource.AddHook` on softkeys' own HWND (in-process subclass; NF-01 compliant). Replaces CanResizeWithGrip. | Approved — Nasser |
 | 2026-07-21 | CR-13 | **Maximize fully blocked** (single-click-only DragMove, caption double-click swallowed, OnStateChanged revert). T-04's "full-screen" defined as edge-drag, not maximize; noted under F-11. | Approved — Nasser |
 | 2026-07-21 | — | **Gate 2 / M4 approved.** Witnessed: T-07 (10-min soak with Bookmap + MotiveWave + 5 screenshots, zero freezes, topmost held), T-08 (White/0.50, auto dark text), T-04 completed via edge-drag scaling, T-09 (persistence round trip + corrupt-file silent defaults). Tagged `m4-settings-polish`. | Approved — Nasser |
+| 2026-07-21 | CR-14 | **Single-file publish fix.** `IncludeNativeLibrariesForSelfExtract=true` in csproj (publish-only effect) so the §7 command yields one exe; WPF native libs self-extract to `%TEMP%` on first run; NF-04 intact. | Approved — Nasser |
+| 2026-07-21 | CR-15 | **M6 — Public mirror** added to §5: empty public GitHub repo `NasserAlh/softkeys` created pre-push; second remote `github` (HTTPS — the Approver's GitHub SSH key was not registered at release time; switchable later); `main` + all tags pushed after M5 acceptance. | Approved — Nasser |
+| 2026-07-21 | — | **Gate 2 / M5 launch check passed.** SHA-256 match (`860fefe9…bc91bd`); published exe verified live: typing, full shifted row, capture toggle, edge resize, maximize block, color/opacity, settings restore. | Approved — Nasser |
+| 2026-07-21 | — | **FINAL ACCEPTANCE.** All §2.3 success criteria witnessed: zero freezes across soak and capture tests, screenshot invisibility, typing in daily applications, EN and AR both proven. softkeys v1.0.0 accepted; remaining items live in the §8 backlog. | **Signed off — Nasser** |

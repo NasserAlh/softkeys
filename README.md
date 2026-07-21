@@ -6,7 +6,7 @@ queries other processes. Draw buttons; on press, inject via `SendInput`; done.
 Authoritative specification: [docs/softkeys-sdlc.md](docs/softkeys-sdlc.md).
 Behavioral reference (layout, sticky modifiers, auto-repeat): `reference/vboard.py`.
 
-**Status:** v1.0.0 release candidate.
+**Status:** v1.0.0 — released 2026-07-21.
 
 Settings persist to `%APPDATA%\softkeys\settings.json`; corrupt or missing
 files fall back to defaults silently.
