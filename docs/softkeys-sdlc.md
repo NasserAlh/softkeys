@@ -3,7 +3,7 @@
 **Project:** softkeys — Custom On-Screen Keyboard for Windows 11
 **Stack:** C# / WPF / .NET 8 (self-contained single-file publish)
 **Version:** Draft 1.0 — 2026-07-21
-**Status:** Released — v1.0.0 accepted and tagged 2026-07-21 (see §9). GitHub (`github.com/NasserAlh/softkeys`) is the sole remote and system of record per CR-17; the cgit copy is a frozen v1.0.0 archive. v1.1 amendment drafted (`docs/softkeys-v1.1-amendment.md`), awaiting Gate A0.
+**Status:** v1.1 (A1) — M7 in progress. Gate A0 approved 2026-07-21 (CR-16, `docs/softkeys-v1.1-amendment.md`). v1.0.0 released and tagged; GitHub is the sole remote of record per CR-17.
 
 ---
 
@@ -79,6 +79,7 @@ Build a **stateless input emitter**: a keyboard window that never queries other 
 - L-02: With F-01 ON, the keyboard is also invisible in screen sharing and recordings. Mitigated by the toggle.
 - L-03: Key labels are English-only in v1; Arabic characters are produced correctly (F-03) but not displayed on keys. Backlog E-01.
 - L-04: Bare modifier taps are not injectable in the latch model — the second press of an armed modifier is a pure cancel, emitting nothing (CR-09). Start remains reachable via the taskbar.
+- L-05: Arabic keycaps show the base (unshifted) Arabic glyph only; shifted Arabic characters (diacritics, tatweel, etc.) are produced correctly when typed but are not displayed on the caps (Amendment A1). Revisit only on user demand.
 
 **GATE 0 — Approver signs off on §3 before design begins.**
 
@@ -182,9 +183,9 @@ Each milestone = one commit series + gate review by Approver before the next sta
 
 | ID | Item | Notes |
 |---|---|---|
-| E-01 | Arabic key labels + layout-aware label switching | Display only; injection already works via D-02 |
+| E-01 | Arabic key labels + layout-aware label switching | **Delivered in v1.1 (in progress)** as F-12 dual-script keycaps per Amendment A1 (no layout switching — both scripts always shown) |
 | E-02 | Numpad block (toggleable) | Extends KeyMap |
-| E-03 | Function-row (F1–F12) toggle | Present in vboard.py; deferred to keep v1 compact |
+| E-03 | Function-row (F1–F12) toggle | **Delivered in v1.1 (in progress)** as F-14 permanent function row per Amendment A1 |
 | E-04 | Themes beyond flat colors | Low priority |
 
 ---
@@ -216,3 +217,4 @@ Each milestone = one commit series + gate review by Approver before the next sta
 | 2026-07-21 | — | **Gate 2 / M5 launch check passed.** SHA-256 match (`860fefe9…bc91bd`); published exe verified live: typing, full shifted row, capture toggle, edge resize, maximize block, color/opacity, settings restore. | Approved — Nasser |
 | 2026-07-21 | — | **FINAL ACCEPTANCE.** All §2.3 success criteria witnessed: zero freezes across soak and capture tests, screenshot invisibility, typing in daily applications, EN and AR both proven. softkeys v1.0.0 accepted; remaining items live in the §8 backlog. | **Signed off — Nasser** |
 | 2026-07-21 | CR-17 | **cgit remote removed; GitHub is the system of record.** `github.com/NasserAlh/softkeys` is the sole remote from this date; NF-07 amended from self-hosted cgit to GitHub. The bare repo on `git.nasserhub.net` is untouched and remains a frozen archive of v1.0.0 (through commit `ed83f02` + all tags); its deletion, if ever, is a separate Approver decision. §7 step 3 marked superseded. (CR-16 remains reserved for Amendment A1 adoption at Gate A0.) | Approved — Nasser |
+| 2026-07-21 | CR-16 | **Amendment A1 adopted — Gate A0 approved.** `docs/softkeys-v1.1-amendment.md` in force: F-12 dual-script keycaps, F-13 case-aware labels + CapsLock indicator, F-14 permanent function row; D-09..D-13; T-10..T-13; milestones M7/M8, gates A0–A2. Display-layer only; input path unchanged. E-01/E-03 moved from §8; L-05 added to §3.3. | Approved — Nasser |
