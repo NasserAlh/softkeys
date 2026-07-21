@@ -25,6 +25,8 @@ internal static class Harness
     {
         Console.WriteLine("softkeys M1 harness — types \"test\" into Notepad via SendInput.");
 
+        HashSet<int> preexisting = NotepadProcesses().Select(p => p.Id).ToHashSet();
+
         try
         {
             Process.Start("notepad.exe");
@@ -50,6 +52,7 @@ internal static class Harness
         {
             Console.Error.WriteLine(
                 $"Foreground window is '{foreground ?? "unknown"}', not Notepad — refusing to inject.");
+            CloseSpawnedNotepad(preexisting);
             return 1;
         }
 
@@ -72,6 +75,33 @@ internal static class Harness
 
     private static bool IsNotepad(string? processName) =>
         string.Equals(processName, "notepad", StringComparison.OrdinalIgnoreCase);
+
+    private static IEnumerable<Process> NotepadProcesses() =>
+        Process.GetProcesses().Where(p =>
+            string.Equals(p.ProcessName, "notepad", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Best-effort cleanup on abort: gracefully close (WM_CLOSE, never Kill)
+    /// Notepad instances that did not exist before we launched one. The Win11
+    /// notepad.exe stub hands off to the Store app, so the Process returned by
+    /// Process.Start is useless for this; a PID diff finds the real instance.
+    /// If Notepad merged into an existing window as a tab, no new process
+    /// exists and nothing is closed — acceptable for a harness.
+    /// </summary>
+    private static void CloseSpawnedNotepad(HashSet<int> preexisting)
+    {
+        foreach (Process p in NotepadProcesses().Where(p => !preexisting.Contains(p.Id)))
+        {
+            try
+            {
+                p.CloseMainWindow();
+            }
+            catch (InvalidOperationException)
+            {
+                // process exited on its own — nothing to close
+            }
+        }
+    }
 
     private static string? ForegroundProcessName()
     {

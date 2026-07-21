@@ -3,7 +3,7 @@
 **Project:** softkeys — Custom On-Screen Keyboard for Windows 11
 **Stack:** C# / WPF / .NET 8 (self-contained single-file publish)
 **Version:** Draft 1.0 — 2026-07-21
-**Status:** Gates 0 and 1 approved 2026-07-21 (see §9); implementation in progress (M1)
+**Status:** M1 approved and tagged `m1-native-core` 2026-07-21 (see §9); M2 in progress
 
 ---
 
@@ -90,7 +90,9 @@ Build a **stateless input emitter**: a keyboard window that never queries other 
 ```
 softkeys/
 ├── src/
-│   ├── App.xaml / App.xaml.cs        # entry, single-instance guard
+│   ├── Program.cs                    # entry point: --selftest / --harness console modes, WPF bootstrap (CR-04)
+│   ├── Harness.cs                    # M1 gate harness: types "test" into Notepad (CR-04)
+│   ├── App.xaml / App.xaml.cs        # WPF application, single-instance guard
 │   ├── MainWindow.xaml               # key grid + header bar (XAML layout)
 │   ├── MainWindow.xaml.cs            # UI logic: sticky modifiers, repeat timers, settings UI
 │   ├── Native/
@@ -190,3 +192,7 @@ Each milestone = one commit series + gate review by Approver before the next sta
 | 2026-07-21 | CR-01 | **Gate 0 approved.** Requirements (§3) accepted as written, including §3.3 limitations. Open question resolved: F1–F12 row stays deferred to backlog E-03; not in v1. | Approved — Nasser |
 | 2026-07-21 | CR-02 | **Gate 1 approved.** Design (§4) accepted as written. | Approved — Nasser |
 | 2026-07-21 | CR-03 | **F-04 layout clarification.** "Matching the existing vboard.py layout" means vboard.py's exact row arrangement is authoritative: ↑ in the Shift row, ← → ↓ in the modifier row. Key widths per vboard.py `create_row()` values, mapped to star sizing per D-01. | Approved — Nasser |
+| 2026-07-21 | CR-04 | **§4.1 tree amended.** `src/Program.cs` (console entry for M1; WPF bootstrap at M2) and `src/Harness.cs` (harness mandated by §5 M1) added to the architecture tree. | Approved — Nasser |
+| 2026-07-21 | CR-05 | **Tooling note.** .NET SDK 8.0.423 installed user-local at `%LOCALAPPDATA%\Microsoft\dotnet` via the official install script; no elevation, profile-contained. Tooling only — not product scope. | Approved — Nasser |
+| 2026-07-21 | CR-06 | **Status-line maintenance authorized as routine.** The document status line is kept current at each gate without further CRs. | Approved — Nasser |
+| 2026-07-21 | — | **Gate 2 / M1 approved.** Witnessed run: selftest 111/111 green; harness typed "test" into Notepad under Approver focus. Tagged `m1-native-core`. | Approved — Nasser |
