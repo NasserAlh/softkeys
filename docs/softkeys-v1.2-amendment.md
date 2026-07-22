@@ -4,7 +4,7 @@
 **Amendment:** A2 — Application icon, installer, and uninstaller
 **Baseline:** v1.1.0 (released 2026-07-21, tag `v1.1.0` → `583619e`, records `af790b3`)
 **Version target:** v1.2.0
-**Status:** Adopted (CR-19). Gate B1 passed 2026-07-22 — T-14–T-18 witnessed, M9 complete (tagged `m9-icon-installer`); M10 in progress — v1.2.0 release prepared, launch check pending
+**Status:** Delivered — v1.2.0 released 2026-07-22; Gates B0–B2 complete, final acceptance signed (baseline §9)
 
 All baseline and A1 rules remain in force. On adoption, committed as `docs/softkeys-v1.2-amendment.md`, recorded as CR-19 in baseline §9.
 
@@ -104,3 +104,5 @@ Housekeeping folded into M9 (record as part of CR-19): refresh the gitignored CL
 | 2026-07-22 | A2 | **M9 implementation complete.** F-15 SVG→ICO pipeline (`assets/generate-icon.ps1`, no external tooling) + icon embedded; F-19/F-20 in build; F-16/F-17/F-18 installer compiled via `installer/build.ps1` (NF-08); setup stub verified asInvoker, no elevation manifest (NF-09). Selftest 201/201. v1.2.0-candidate hashes: exe `c5f6ab7e…d3270`, setup `0e86abc3…63303`. Awaiting witnessed T-14–T-18. | pending Gate B1 |
 | 2026-07-22 | A2 | **Gate B1 progress.** T-14 passed (no UAC, install/identity/icon correct; optional tasks unchecked on first run — the second run showed Inno's remembered selections, by design, no DF-03). DF-02 (T-15 settings-prompt default) reported, investigated, and **withdrawn** — reproduction showed No default, Enter keeps settings, D-18 satisfied as built; full record in baseline §9. Remaining: T-15 re-run with a deliberate Enter-press at the prompt, T-16, T-17, T-18; then Gate B1 sign-off and M10. | Approved — Nasser |
 | 2026-07-22 | A2 | **Gate B1 approved — M9 complete.** T-15–T-18 witnessed (full record in baseline §9, incl. the Enter-press D-18 confirmation closing the DF-02 loop); tagged `m9-icon-installer`; M10 authorized | Approved — Nasser |
+| 2026-07-22 | A2 | **Gate B2 passed — v1.2.0 released.** Launch check green: both hashes match the T-15–T-18 witnessed build (exe `9df54a46…2c02`, setup `f4768823…56f3`); sanity launch clean; tag `v1.2.0` pushed; GitHub Release live with both assets | Approved — Nasser |
+| 2026-07-22 | A2 | **Final acceptance v1.2.0** — Amendment A2 delivered in full; full record in baseline §9 | **Signed off — Nasser** |
