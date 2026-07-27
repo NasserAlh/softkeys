@@ -20,17 +20,25 @@ softkeys exits that design category entirely. It is a **stateless input emitter*
 - **Function row** — permanent `Esc` + `F1`–`F12` row that participates in sticky-modifier chords: arm Alt, tap F4.
 - **Freeze-proof by design** — no UI Automation, no hooks into other processes, no caret tracking, no TSF.
 - **Zero network code** — no telemetry, no update checks, no sockets. Auditable in minutes; the source is small.
-- **Single portable exe** — self-contained .NET 8, no installer, no prerequisites, runs as standard user.
-- Sticky modifiers (tap Shift/Ctrl/Alt/Win to arm, auto-release after the next key), shift-aware key labels, hold-to-repeat, adjustable color and opacity with automatic text contrast, resizable with proportional key scaling, settings persisted between sessions.
+- **Portable exe or per-user installer** — self-contained .NET 8, no prerequisites, no admin rights either way; the installer never shows a UAC prompt, and uninstalling keeps your settings by default.
+- Sticky modifiers (tap Shift/Ctrl/Alt/Win to arm, auto-release after the next key), shift-aware key labels, hold-to-repeat, adjustable color and opacity with automatic text contrast, resizable with proportional key scaling, minimize to the taskbar, immunity to Windows Snap (edge drags just move the window), settings persisted between sessions.
 
 ## Install
 
-1. Download `softkeys.exe` from the [latest release](../../releases/latest).
-2. Verify the hash (published in the release notes; for v1.1.0: `bda5b49152eec9d635edcaf3e65c5f237853621a501438fa457986534575a9dc`):
-   `certutil -hashfile softkeys.exe SHA256`
-3. Run it. No installation, no admin rights.
+**Installer:** download `softkeys-setup.exe` from the [latest release](../../releases/latest) and run it. Per-user install to `%LOCALAPPDATA%\Programs\softkeys` — no admin rights, no UAC prompt at any point. You get a Start Menu entry and an Apps & Features listing; a desktop shortcut and "start when I sign in" are optional and off by default. `/SILENT` and `/VERYSILENT` are supported. Uninstalling keeps your settings unless you explicitly choose to remove them.
 
-**SmartScreen note:** the exe is unsigned (code-signing certificates cost real money; this is a free tool). Windows may warn on first run — "More info → Run anyway." If you'd rather not trust a downloaded binary, build it yourself in one command (below); the source is short enough to read in one sitting, and the zero-network-code claim is verifiable there.
+**Portable:** download `softkeys.exe` and run it. No installation, no admin rights.
+
+Verify the hashes (published in the release notes; for v1.2.0):
+
+```
+certutil -hashfile softkeys.exe SHA256
+  9df54a46e88ffc4c16e26f4db3ec9350387e722ddb5db7eee10c7a4f5a5f2c02
+certutil -hashfile softkeys-setup.exe SHA256
+  f4768823bc9c690e66a9b8639c0eade4c0dd1981ce6180e5ac4e4a8ac29e56f3
+```
+
+**SmartScreen note:** both the exe and the installer are unsigned (code-signing certificates cost real money; this is a free tool). Windows may warn on first run — "More info → Run anyway." If you'd rather not trust a downloaded binary, build both yourself (below); the source is short enough to read in one sitting, and the zero-network-code claim is verifiable there.
 
 ## Build from source
 
@@ -50,9 +58,18 @@ Run the built-in self-test (structural checks on the injection layer, key map, a
 softkeys.exe --selftest
 ```
 
+To build the installer as well (requires [Inno Setup 6](https://jrsoftware.org/isinfo.php); a user-scope install is fine):
+
+```
+powershell -ExecutionPolicy Bypass -File installer\build.ps1
+```
+
+This publishes the exe, compiles `installer/output/softkeys-setup.exe`, and prints both SHA-256 hashes.
+
 ## Usage
 
 - **☰** in the header bar shows/hides the settings (capture invisibility toggle, background color, opacity).
+- **—** minimizes to the taskbar; clicking the taskbar icon restores it — the keyboard still never takes focus.
 - **Drag the title strip** to move; **drag any edge or corner** to resize — keys scale proportionally.
 - **Modifiers are sticky:** tap Shift, then a letter → one shifted character, Shift releases itself. Tap an armed modifier again to cancel it (nothing is typed). Win works as a chord: arm Win, tap E → Explorer.
 - Settings are saved to `%APPDATA%\softkeys\settings.json`. Delete the file to reset; a corrupt file is silently replaced with defaults.
