@@ -51,12 +51,12 @@ internal static class InputInjectorTests
             new[] { "`", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=", "Backspace" },
             new[] { "Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\\" },
             new[] { "CapsLock", "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'", "Enter" },
-            new[] { "Shift_L", "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", "Shift_R", "Up" },
+            new[] { "Shift_L", "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", "Shift_R", "Up", "Delete" },
             new[] { "Ctrl_L", "Super_L", "Alt_L", "Space", "Alt_R", "Super_R", "Ctrl_R", "Left", "Right", "Down" },
         };
 
         string[] layoutKeys = layoutRows.SelectMany(r => r).ToArray();
-        Check("layout defines 77 keys", layoutKeys.Length == 77);
+        Check("layout defines 78 keys", layoutKeys.Length == 78);
         Check("layout has no duplicate key names", layoutKeys.Distinct().Count() == layoutKeys.Length);
 
         foreach (string name in layoutKeys)
@@ -71,7 +71,8 @@ internal static class InputInjectorTests
             table.Values.Distinct().Count() == table.Count);
 
         // D-05: exactly the nav/right-side keys carry the E0 extended marker.
-        string[] expectedExtended = { "Up", "Down", "Left", "Right", "Ctrl_R", "Alt_R", "Super_L", "Super_R" };
+        // Delete joined the set in F-21 (Amendment A3, D-22).
+        string[] expectedExtended = { "Up", "Down", "Left", "Right", "Delete", "Ctrl_R", "Alt_R", "Super_L", "Super_R" };
         string[] actualExtended = table.Where(kv => kv.Value.Extended).Select(kv => kv.Key).OrderBy(n => n).ToArray();
         Check("extended-key set matches D-05",
             actualExtended.SequenceEqual(expectedExtended.OrderBy(n => n)));
@@ -85,11 +86,17 @@ internal static class InputInjectorTests
             ("Shift_L", 0x2A), ("Z", 0x2C), ("/", 0x35), ("Shift_R", 0x36),
             ("Ctrl_L", 0x1D), ("Alt_L", 0x38), ("Space", 0x39),
             ("Up", 0x48), ("Down", 0x50), ("Left", 0x4B), ("Right", 0x4D),
+            ("Delete", 0x53),
             ("Super_L", 0x5B), ("T", 0x14), ("E", 0x12), ("S", 0x1F),
             ("Esc", 0x01), ("F1", 0x3B), ("F10", 0x44), ("F11", 0x57), ("F12", 0x58),
         };
         foreach ((string name, ushort code) in spots)
             Check($"'{name}' is 0x{code:X2}", table[name].Code == code);
+
+        // R-11: 0x53 must be injected as E0 53. Plain 53 is the numpad decimal
+        // point, so a missing flag here means the key types '.' instead of
+        // deleting — a wrong-key bug that still looks like success.
+        Check("'Delete' carries the E0 extended marker (R-11)", table["Delete"].Extended);
     }
 
     // D-03 as amended by CR-18: plain taps stay one atomic batch; chords are

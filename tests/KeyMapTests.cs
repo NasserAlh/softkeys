@@ -22,9 +22,15 @@ internal static class KeyMapTests
         Check("six rows (F-04 + F-14)", rows.Count == 6);
         Check("function row spans 27 star units (Esc 3 + 12x2)", rows[0].Sum(k => k.Width) == 27);
         for (int i = 1; i < rows.Count; i++)
-            Check($"row {i} spans 30 star units", rows[i].Sum(k => k.Width) == 30);
+        {
+            // F-21/D-21: Row 4 grew to 32 units for Del; the other main rows
+            // stay at 30. Rows are independent star grids (D-13), so the sums
+            // are allowed to differ.
+            int expected = i == 4 ? 32 : 30;
+            Check($"row {i} spans {expected} star units", rows[i].Sum(k => k.Width) == expected);
+        }
 
-        Check("77 keys total", all.Length == 77);
+        Check("78 keys total", all.Length == 78);
         Check("key names unique", all.Select(k => k.Name).Distinct().Count() == all.Length);
         Check("every key resolves in ScanCodeTable",
             all.All(k => ScanCodeTable.Keys.ContainsKey(k.Name)));
@@ -55,10 +61,25 @@ internal static class KeyMapTests
         {
             ("Space", 12), ("CapsLock", 3), ("Shift_L", 4), ("Shift_R", 4),
             ("Backspace", 5), ("Enter", 5), ("`", 1), ("\\", 4), ("Q", 2), ("Ctrl_L", 2),
-            ("Esc", 3), ("F5", 2),
+            ("Esc", 3), ("F5", 2), ("Delete", 2),
         };
         foreach ((string name, int width) in widths)
             Check($"'{name}' width {width}", all.Single(k => k.Name == name).Width == width);
+
+        // F-21/D-21: Del sits last in Row 4, immediately right of Up. Locked as
+        // a sequence so a later reorder cannot move it unnoticed.
+        Check("row 4 is Shift_L..Shift_R, Up, Delete",
+            rows[4].Select(k => k.Name).SequenceEqual(new[]
+            {
+                "Shift_L", "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", "Shift_R", "Up", "Delete",
+            }));
+
+        // D-23: the cap reads "Del" while the name stays "Delete", and the key
+        // is plain — no shift label, no Arabic glyph, not a modifier.
+        KeyDef del = all.Single(k => k.Name == "Delete");
+        Check("'Delete' cap label is 'Del'", del.Label == "Del");
+        Check("'Delete' is a plain key (F-21)",
+            del is { IsModifier: false, ShiftLabel: null, Arabic: null });
 
         // F-14: function row shape — 13 plain keys, Esc wider, F1..F12 equal.
         IReadOnlyList<KeyDef> fRow = rows[0];

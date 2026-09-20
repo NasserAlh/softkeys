@@ -256,6 +256,10 @@ public static class ScanCodeTable
         ["/"] = new(0x35, false),
         ["Shift_R"] = new(0x36, false),
         ["Up"] = new(0x48, true),
+        // F-21 (Amendment A3): extended is load-bearing here — 0x53 is the
+        // nav-cluster Delete only as E0 53; plain 53 is the numpad decimal
+        // point (D-22, R-11).
+        ["Delete"] = new(0x53, true),
 
         // Row 5 — modifier row (← → ↓ live here per CR-03)
         ["Ctrl_L"] = new(0x1D, false),

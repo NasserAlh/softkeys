@@ -77,6 +77,11 @@ public static class KeyMap
             SymAr(",", "<", "و"), SymAr(".", ">", "ز"), SymAr("/", "?", "ظ"),
             Mod("Shift_R", "Shift", 4),
             new KeyDef("Up", "↑", null, 2, false),
+            // F-21 (Amendment A3): Del at the right end of Row 4, beside ↑,
+            // mirroring a physical nav cluster. Label "Del" (D-23) — the name
+            // stays "Delete" to match ScanCodeTable/VK vocabulary. Row 4 is the
+            // only 32-unit row as a result (D-21; rows are independent grids).
+            new KeyDef("Delete", "Del", null, 2, false),
         },
 
         // Row 5 — modifier row (← → ↓ live here per CR-03)
