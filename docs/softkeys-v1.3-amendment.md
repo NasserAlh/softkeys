@@ -4,7 +4,7 @@
 **Amendment:** A3 — `Del` key
 **Baseline:** v1.2.0 (released 2026-07-22, tag `v1.2.0` → `6a09d2c`, records in baseline §9)
 **Version target:** v1.2.1 (patch — confirmed at Gate C0; `<Version>` bumped 1.2.0 → 1.2.1 so the installer, exe, and Apps & Features agree per D-17)
-**Status:** **Delivered — M11 + M12 complete.** Gate C0 (scope) and Gate C1 (T-19 witnessed) approved; installer built. Not released: no tag, no push, no GitHub Release. Gate C2 pending the Approver's release decision (baseline §9).
+**Status:** **Released — v1.2.1** (2026-07-27, Gate C2). Gates C0 (scope), C1 (T-19 witnessed) and C2 (release) approved. Amendment delivered in full.
 
 All baseline and A1/A2 rules remain in force. On adoption, committed as `docs/softkeys-v1.3-amendment.md` and recorded as CR-20 in baseline §9.
 
@@ -140,7 +140,9 @@ Unaffected and must stay green: the `(code, extended)` uniqueness check, `key na
 | 2026-07-27 | CR-20 | **Gate C0 approved — Amendment A3 adopted.** Implementer authorized with "implement". Numbering confirmed: this is A3; the word-prediction brief renumbers to A4. Auto-repeat: `Del` stays under F-07 unchanged (R-12 accepted, not exempted). Versioning deferred to a later decision. | Approved — Nasser |
 | 2026-07-27 | A3 | **M11 complete.** F-21 implemented: `KeyMap.cs` Row 4 + `ScanCodeTable` `["Delete"] = new(0x53, true)` + test assertions across two suites. Clean rebuild; selftest **208/208, 0 failed**. R-11 guard negative-tested (deliberately non-extended → exactly the two expected failures; restored → 208/208). | Approved — Nasser |
 | 2026-07-27 | A3 | **Gate C1 passed — T-19 witnessed.** The Approver ran the published self-contained build (`1.2.0+5574e80`, sha `6820567f…7c15`) and confirmed the `Del` key works: forward-delete, correct behaviour in live use. This is the R-11 end-to-end check — a missing extended flag would have typed `.` instead of deleting. T-04/T-17 re-runs folded into the M12 artifact checks below. | Approved — Nasser |
-| 2026-07-27 | A3 | **Gate C0 follow-up — version bump authorized, M12 authorized.** `<Version>` 1.2.0 → **1.2.1**; `installer\build.ps1` run; artifacts built and hashes recorded in B3.7 (see below). Scope limited by the Approver to **local commit only**: no tag, no push to origin, no GitHub Release. Gate C2 (release) remains the Approver's later decision. | Approved — Nasser |
+| 2026-07-27 | A3 | **Gate C0 follow-up — version bump authorized, M12 authorized.** `<Version>` 1.2.0 → **1.2.1**; `installer\build.ps1` run; artifacts built and hashes recorded in B3.8. Scope initially limited by the Approver to **local commit only**. | Approved — Nasser |
+| 2026-07-27 | A3 | **Gate C2 passed — v1.2.1 released.** Approver reported the install worked smoothly, upgrading the installed app to the new version, with the `Del` key functioning — re-witnessing **T-19** and incidentally **T-16** (in-place upgrade, single 1.2.1 Apps & Features entry, settings kept). Tag `v1.2.1` (`c6d8631`) pushed; GitHub Release published with both assets; API-verified digests match (B3.8). | Approved — Nasser |
+| 2026-07-27 | A3 | **Final acceptance v1.2.1** — Amendment A3 delivered in full; full record in baseline §9 | **Signed off — Nasser** |
 
 **Implementation deviation recorded at M11 (process note, not scope):** the first build after the test edits reported two spurious failures caused by a stale incremental build, not by the source. A `bin`/`obj` clean rebuild produced 208/208. No code difference resulted; recorded because a stale-build false negative could otherwise be mistaken for a real defect, or worse, mask one. Recommend a clean rebuild before every witnessed gate run.
 
@@ -165,3 +167,17 @@ Run 2026-07-27 by the Implementer; artifacts produced by `installer\build.ps1` (
 The stamped source revision `5574e80` equals `git rev-parse HEAD`, confirming both artifacts came from the committed tree.
 
 **Environment deviation carried forward (unchanged by this amendment, flagged again):** `build.ps1` line 16–17 falls back to the SDK on `PATH` when the documented user-local SDK 8 is absent. On this machine `%LOCALAPPDATA%\Microsoft\dotnet` does not exist, so **SDK 9.0.318** at `C:\Program Files\dotnet` built these artifacts, not SDK 8 (CR-05 / the "SDK 8 on both PCs" decision). The target remains `net8.0-windows`, so the product output is unaffected — but these hashes are not reproducible on an SDK-8 machine. This is the same drift reported in the 2026-07-27 v1.2.0 install audit, still not resolved; it belongs in a CR of its own.
+
+### Release verification (Gate C2, 2026-07-27)
+
+Tag `v1.2.1` at `c6d8631`, pushed to origin; GitHub Release published with both assets.
+
+| Check | Result |
+|---|---|
+| GitHub-computed asset digest vs local hash — exe | **match** (`18fba8ec…9eb3`, 161,918,413 bytes) |
+| GitHub-computed asset digest vs local hash — setup | **match** (`01bba7ad…ccbf`, 49,333,184 bytes) |
+| `releases/latest` | resolves to `v1.2.1` |
+| Draft / prerelease flags | false / false |
+| Installed copy after running setup over v1.2.0 | `1.2.1.0`, byte-identical to the released exe; Apps & Features shows a single `1.2.1` entry — **T-16 re-witnessed** |
+
+The upgrade path is the part worth noting: the Inno `AppId` (`{31641528-C159-4C55-92A6-621AC5B6E0E5}`) is a fixed GUID, so 1.2.1 replaces 1.2.0 in place rather than installing alongside it. Confirmed on the Approver's machine, not inferred.
