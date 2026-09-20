@@ -21,7 +21,7 @@ softkeys exits that design category entirely. It is a **stateless input emitter*
 - **Freeze-proof by design** — no UI Automation, no hooks into other processes, no caret tracking, no TSF.
 - **Zero network code** — no telemetry, no update checks, no sockets. Auditable in minutes; the source is small.
 - **Portable exe or per-user installer** — self-contained .NET 8, no prerequisites, no admin rights either way; the installer never shows a UAC prompt, and uninstalling keeps your settings by default.
-- Sticky modifiers (tap Shift/Ctrl/Alt/Win to arm, auto-release after the next key), shift-aware key labels, hold-to-repeat, adjustable color and opacity with automatic text contrast, resizable with proportional key scaling, minimize to the taskbar, immunity to Windows Snap (edge drags just move the window), settings persisted between sessions.
+- Sticky modifiers (tap Shift/Ctrl/Alt/Win to arm, auto-release after the next key), shift-aware key labels, hold-to-repeat, adjustable color and opacity with automatic text contrast, resizable with proportional key scaling, minimize to the taskbar, immunity to Windows Snap (edge drags just move the window), settings persisted between sessions. A `Del` key sits at the right end of the Shift row, beside `↑`.
 
 ## Install
 
@@ -29,13 +29,13 @@ softkeys exits that design category entirely. It is a **stateless input emitter*
 
 **Portable:** download `softkeys.exe` and run it. No installation, no admin rights.
 
-Verify the hashes (published in the release notes; for v1.2.0):
+Verify the hashes (published in the release notes; for v1.2.1):
 
 ```
 certutil -hashfile softkeys.exe SHA256
-  9df54a46e88ffc4c16e26f4db3ec9350387e722ddb5db7eee10c7a4f5a5f2c02
+  18fba8ec844e0f7fd5d34b866b9af87d69d9f98322bb2cd2790e6654954a9eb3
 certutil -hashfile softkeys-setup.exe SHA256
-  f4768823bc9c690e66a9b8639c0eade4c0dd1981ce6180e5ac4e4a8ac29e56f3
+  01bba7ad71da7ba5deaa4119401d52bdf9411db7a48c7f5ede6d9eb443f9ccbf
 ```
 
 **SmartScreen note:** both the exe and the installer are unsigned (code-signing certificates cost real money; this is a free tool). Windows may warn on first run — "More info → Run anyway." If you'd rather not trust a downloaded binary, build both yourself (below); the source is short enough to read in one sitting, and the zero-network-code claim is verifiable there.
