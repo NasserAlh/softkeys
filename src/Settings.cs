@@ -14,8 +14,15 @@ public sealed class Settings
     public string BackgroundColor { get; set; } = "Black";
     public double Opacity { get; set; } = 0.90;
     public double WindowWidth { get; set; } = 900;
-    public double WindowHeight { get; set; } = 380; // six rows per D-13 (min 260)
+    public double WindowHeight { get; set; } = 414; // six rows per D-13 + F-22 strip (min 300)
     public bool CaptureExcluded { get; set; } = true;
+
+    /// <summary>
+    /// F-22 (A4/D-31): English word suggestions. Defaults on, matching the
+    /// Approver's brief. Files written before A4 lack the key and therefore
+    /// deserialize to true, which is the intended upgrade behaviour.
+    /// </summary>
+    public bool Prediction { get; set; } = true;
 
     public static string DefaultPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

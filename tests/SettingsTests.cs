@@ -22,7 +22,7 @@ internal static class SettingsTests
             string missing = Path.Combine(dir, "missing.json");
             Settings defaults = Settings.Load(missing);
             Check("missing file yields defaults",
-                defaults is { BackgroundColor: "Black", Opacity: 0.90, WindowWidth: 900, WindowHeight: 380, CaptureExcluded: true });
+                defaults is { BackgroundColor: "Black", Opacity: 0.90, WindowWidth: 900, WindowHeight: 414, CaptureExcluded: true, Prediction: true });
 
             string corrupt = Path.Combine(dir, "corrupt.json");
             File.WriteAllText(corrupt, "{ this is not json !!");
@@ -48,11 +48,20 @@ internal static class SettingsTests
                 WindowWidth = 1234,
                 WindowHeight = 456,
                 CaptureExcluded = false,
+                Prediction = false,
             };
             custom.Save(roundtrip);
             Settings restored = Settings.Load(roundtrip);
             Check("roundtrip preserves all fields",
-                restored is { BackgroundColor: "Teal", Opacity: 0.55, WindowWidth: 1234, WindowHeight: 456, CaptureExcluded: false });
+                restored is { BackgroundColor: "Teal", Opacity: 0.55, WindowWidth: 1234, WindowHeight: 456, CaptureExcluded: false, Prediction: false });
+
+            // A4/D-31: a settings.json written before the feature exists has no
+            // "Prediction" key and must deserialize to the on default, not throw.
+            string legacy = Path.Combine(dir, "legacy.json");
+            File.WriteAllText(legacy, "{\"BackgroundColor\":\"Blue\",\"Opacity\":0.5,\"WindowWidth\":800,\"WindowHeight\":300,\"CaptureExcluded\":true}");
+            Settings upgraded = Settings.Load(legacy);
+            Check("pre-A4 settings file defaults prediction on",
+                upgraded is { BackgroundColor: "Blue", Prediction: true });
             Check("save creates missing directories", File.Exists(roundtrip));
         }
         finally

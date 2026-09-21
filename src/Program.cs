@@ -18,7 +18,8 @@ internal static class Program
         {
             null => RunApp(),
             "--selftest" => WithConsole(() =>
-                Tests.InputInjectorTests.RunAll() + Tests.KeyMapTests.RunAll() + Tests.SettingsTests.RunAll()),
+                Tests.InputInjectorTests.RunAll() + Tests.KeyMapTests.RunAll()
+                + Tests.SettingsTests.RunAll() + Tests.PredictionTests.RunAll()),
             "--harness" => WithConsole(Harness.Run),
             "--capsprobe" => WithConsole(Harness.RunCapsProbe),
             "--altprobe" => WithConsole(Harness.RunAltProbe),

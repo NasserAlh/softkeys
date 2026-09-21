@@ -12,3 +12,8 @@ Thumbs.db
 desktop.ini
 *.env
 CLAUDE.md
+
+# A4 dictionary build workspace: the Project Gutenberg corpus, the downloaded
+# vocabulary list, and the tool's own build output. Only the packed asset
+# (assets/softkeys-words.br) is committed; everything here is regenerable.
+.dictbuild/

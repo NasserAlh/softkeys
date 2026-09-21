@@ -73,10 +73,30 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _repeatInterval = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private KeyDef? _repeatKey;
 
+    /// <summary>
+    /// F-22 prediction support (D-28, D-29). Loaded once for the process
+    /// lifetime; null when the embedded dictionary is missing or unreadable, in
+    /// which case the keyboard works exactly as before. Holds no cross-process
+    /// state: the shadow buffer is rebuilt solely from our own emitted text,
+    /// which is what keeps NF-01 intact.
+    /// </summary>
+    private static readonly Predictor? Pred = Predictor.LoadDefault();
+
     public MainWindow()
     {
         _settings = Settings.Load();
         InitializeComponent();
+
+        // R-16 (A4): the strip adds a row, so MinHeight rose 260 -> 300. A
+        // height persisted before A4 could be as low as the old minimum, and
+        // clamping alone would leave all six key rows cramped. Grow only when
+        // the stored height cannot accommodate the strip at all; a size the
+        // user deliberately chose above the old minimum is left exactly as it
+        // is (the strip then simply takes its 34 px from the grid). At this
+        // point InitializeComponent has just reset Height to the XAML default,
+        // so Math.Max picks the larger of the new default and the new minimum.
+        if (_settings.WindowHeight < MinHeight)
+            _settings.WindowHeight = Math.Max(MinHeight, Height);
 
         Width = Math.Clamp(_settings.WindowWidth, MinWidth, SystemParameters.VirtualScreenWidth);
         Height = Math.Clamp(_settings.WindowHeight, MinHeight, SystemParameters.VirtualScreenHeight);
@@ -90,6 +110,8 @@ public partial class MainWindow : Window
         _settings.Opacity = Math.Round(Math.Clamp(_settings.Opacity, 0.0, 1.0), 2);
         OpacitySlider.Value = _settings.Opacity;
         CaptureToggle.IsChecked = _settings.CaptureExcluded;
+        PredictionToggle.IsChecked = _settings.Prediction && Pred is not null;
+        PredictionToggle.IsEnabled = Pred is not null;
 
         BuildKeyGrid();
 
@@ -363,6 +385,11 @@ public partial class MainWindow : Window
     /// the one-shot latches release (F-05) and labels revert (F-06).
     /// Repeat ticks re-enter here after the latches cleared, so repeats are
     /// unmodified — same as vboard.
+    ///
+    /// F-22 ordering (D-29): the emitted character must be resolved from the
+    /// Shift/CapsLock state that is in force *now*, because the latch release
+    /// below clears that state before this method returns. Everything the
+    /// predictor needs is therefore read and committed before the injection.
     /// </summary>
     private void EmitKey(KeyDef key)
     {
@@ -371,7 +398,17 @@ public partial class MainWindow : Window
             if (_armed[name])
                 mods.Add(ScanCodeTable.Keys[name]);
 
+        bool shifted = _armed["Shift_L"] || _armed["Shift_R"];
+        bool caps = InputInjector.IsCapsLockOn;
+        char emitted = EmittedChar(key, shifted, caps);
+
         InputInjector.Tap(ScanCodeTable.Keys[key.Name], mods);
+
+        if (Pred is not null)
+        {
+            Pred.Feed(emitted);
+            UpdateSuggestions();
+        }
 
         if (mods.Count > 0)
             foreach (string name in ModifierOrder)
@@ -386,6 +423,102 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// The character a key will produce, given the Shift/CapsLock state at emit
+    /// time. Shared by <see cref="RefreshKeyCaps"/> and the F-22 predictor so
+    /// the keycaps and the shadow buffer can never disagree (D-29).
+    /// Non-printing keys return a space, which is not a letter and therefore
+    /// ends the tracked word with no special case.
+    /// </summary>
+    private static char EmittedChar(KeyDef key, bool shifted, bool caps)
+    {
+        if (IsLetter(key))
+            return shifted ^ caps ? key.Label[0] : char.ToLowerInvariant(key.Label[0]);
+
+        return key.Name switch
+        {
+            "Space" => ' ',
+            "Tab" => '\t',
+            "Enter" => '\n',
+            _ => key.ShiftLabel is { Length: > 0 } shiftLabel && shifted ? shiftLabel[0] : key.Label[0],
+        };
+    }
+
+    // -- F-22 word prediction (A4) ------------------------------------------
+
+    /// <summary>
+    /// Shows or hides the suggestion strip from the current tracked prefix.
+    /// No-op unless prediction is on and the dictionary loaded.
+    /// </summary>
+    private void UpdateSuggestions()
+    {
+        if (Pred is null || !_settings.Prediction)
+        {
+            SuggestionStrip.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        IReadOnlyList<string> candidates = Pred.Suggestions();
+        Button[] slots = { Suggestion1, Suggestion2, Suggestion3 };
+
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (i < candidates.Count)
+            {
+                slots[i].Content = candidates[i];
+                slots[i].Tag = candidates[i];
+                slots[i].Visibility = Visibility.Visible;
+            }
+            else
+            {
+                slots[i].Tag = null;
+                slots[i].Visibility = Visibility.Collapsed;
+            }
+        }
+
+        SuggestionStrip.Visibility = candidates.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void OnPredictionToggleChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_initialized)
+            return;
+
+        _settings.Prediction = PredictionToggle.IsChecked == true;
+        _settings.Save();
+
+        if (!_settings.Prediction)
+            Pred?.Reset();
+
+        UpdateSuggestions();
+    }
+
+    /// <summary>
+    /// Accepting a suggestion emits the remaining letters as ordinary
+    /// unmodified taps — deliberately NOT through <see cref="EmitKey"/>, which
+    /// would start the auto-repeat timer and feed the emission back into the
+    /// predictor that produced it (D-30).
+    /// </summary>
+    private void OnSuggestionClick(object sender, RoutedEventArgs e)
+    {
+        if (Pred is null || sender is not Button { Tag: string candidate })
+            return;
+
+        string? remainder = Pred.Accept(candidate);
+        if (remainder is null)
+        {
+            // Buffer and suggestion disagreed (stale strip); drop it rather
+            // than emit text the user did not ask for.
+            UpdateSuggestions();
+            return;
+        }
+
+        foreach (char c in remainder)
+            InputInjector.Tap(ScanCodeTable.Keys[char.ToUpperInvariant(c).ToString()]);
+
+        UpdateSuggestions();
+    }
+
+    /// <summary>
     /// F-06 + F-13: symbol caps show their shifted glyph while Shift is armed;
     /// letter caps are lowercase unless Shift armed XOR CapsLock active; the
     /// CapsLock key carries the armed-style highlight while active (D-09).
@@ -396,12 +529,7 @@ public partial class MainWindow : Window
         bool caps = InputInjector.IsCapsLockOn;
 
         foreach ((KeyDef key, TextBlock latin) in _dynamicCaps)
-        {
-            if (IsLetter(key))
-                latin.Text = shifted ^ caps ? key.Label : key.Label.ToLowerInvariant();
-            else if (key.ShiftLabel is not null)
-                latin.Text = shifted ? key.ShiftLabel : key.Label;
-        }
+            latin.Text = EmittedChar(key, shifted, caps).ToString();
 
         if (_capsLockButton is not null)
             _capsLockButton.Background = caps ? _armedBrush : Brushes.Transparent;

@@ -17,6 +17,7 @@ softkeys exits that design category entirely. It is a **stateless input emitter*
 - **Works with any keyboard layout, including RTL** — keys inject *scan codes*, so the active Windows layout decides the character. Switch to Arabic and the letter keys produce Arabic; no configuration.
 - **Dual-script keycaps** — every key that differs under the Arabic (101) layout shows both glyphs (Latin top-left, Arabic bottom-right), always visible. No layout detection, no switching — the cap already tells you what each layout will type.
 - **Case-aware labels with a CapsLock indicator** — letter caps show lowercase or uppercase to match what will actually be typed (Shift XOR CapsLock, like a real keyboard), and the CapsLock key highlights while active.
+- **English word suggestions** — as you type, a strip under the keys offers up to three completions of the current word, most frequent first; tap one and only the missing letters are sent. It works from a *shadow buffer* of what softkeys itself typed — it never reads the target application, which is the whole reason this keyboard doesn't freeze. Completion only: suggestions are **append-only**, so softkeys never emits Backspace or Delete on its own, and if the buffer ever drifts out of sync the worst case is a few unwanted letters, never lost text. Toggle it under ☰.
 - **Function row** — permanent `Esc` + `F1`–`F12` row that participates in sticky-modifier chords: arm Alt, tap F4.
 - **Freeze-proof by design** — no UI Automation, no hooks into other processes, no caret tracking, no TSF.
 - **Zero network code** — no telemetry, no update checks, no sockets. Auditable in minutes; the source is small.
@@ -29,13 +30,13 @@ softkeys exits that design category entirely. It is a **stateless input emitter*
 
 **Portable:** download `softkeys.exe` and run it. No installation, no admin rights.
 
-Verify the hashes (published in the release notes; for v1.2.1):
+Verify the hashes (published in the release notes; for v1.3.0):
 
 ```
 certutil -hashfile softkeys.exe SHA256
-  18fba8ec844e0f7fd5d34b866b9af87d69d9f98322bb2cd2790e6654954a9eb3
+  45c199c1cd0029c39ec596d87428ae4c056def1dc4cee3d5247b01d5ba270804
 certutil -hashfile softkeys-setup.exe SHA256
-  01bba7ad71da7ba5deaa4119401d52bdf9411db7a48c7f5ede6d9eb443f9ccbf
+  eef298ec370b5c6ec4a3eac188c30f073e6d20a44a3ae9475ea537e76b49894b
 ```
 
 **SmartScreen note:** both the exe and the installer are unsigned (code-signing certificates cost real money; this is a free tool). Windows may warn on first run — "More info → Run anyway." If you'd rather not trust a downloaded binary, build both yourself (below); the source is short enough to read in one sitting, and the zero-network-code claim is verifiable there.
@@ -68,7 +69,7 @@ This publishes the exe, compiles `installer/output/softkeys-setup.exe`, and prin
 
 ## Usage
 
-- **☰** in the header bar shows/hides the settings (capture invisibility toggle, background color, opacity).
+- **☰** in the header bar shows/hides the settings (capture invisibility toggle, word suggestions, background color, opacity).
 - **—** minimizes to the taskbar; clicking the taskbar icon restores it — the keyboard still never takes focus.
 - **Drag the title strip** to move; **drag any edge or corner** to resize — keys scale proportionally.
 - **Modifiers are sticky:** tap Shift, then a letter → one shifted character, Shift releases itself. Tap an armed modifier again to cancel it (nothing is typed). Win works as a chord: arm Win, tap E → Explorer.
@@ -82,12 +83,16 @@ This publishes the exe, compiles `installer/output/softkeys-setup.exe`, and prin
 - A bare Win-key tap can't open the Start menu (the sticky-latch model only injects modifiers as part of a chord); the Start button is one click away anyway.
 - Arabic keycaps show the base (unshifted) glyph only — shifted Arabic characters (diacritics, tatweel, …) type correctly but aren't printed on the caps; three glyphs per key would hurt readability.
 - The CapsLock indicator refreshes on interaction with the keyboard (after each key and on pointer-enter), not on a timer — toggle CapsLock on the physical keyboard while softkeys is idle and the indicator catches up at your next hover or click. A polling timer is exactly the kind of background chatter this project avoids.
+- Word suggestions are **completion only, English only**. Nothing is ever corrected: "teh" is not changed to "the", and softkeys never deletes on its own. Suggestions are hidden while an Arabic word is being typed.
+- The suggestion dictionary is ranked from **public-domain literature** (Project Gutenberg), which skews slightly literary — the ranking favours narrative vocabulary over conversational usage, and rare modern terms can be missing. The shipped list is 30,000 words; see [`docs/softkeys-v1.4-amendment.md`](docs/softkeys-v1.4-amendment.md) for how it is built and how to regenerate it.
 
 ## Credits
 
 softkeys began as a Windows reimplementation of **[vboard](https://github.com/mdev588/vboard)** by **mdev588** — a virtual keyboard for Linux (now archived). The layout, sticky-modifier behavior, color palette, and general spirit come from vboard; the original `vboard.py` is preserved in [`reference/`](reference/) under its LGPL-2.1 license. Thank you, mdev588.
 
 The Windows implementation was developed with an AI-assisted, gated SDLC process — requirements, design decisions, risk register, and acceptance tests are all in [`docs/softkeys-sdlc.md`](docs/softkeys-sdlc.md), which some readers may find as interesting as the code.
+
+The word-suggestion dictionary is built entirely from public-domain material: vocabulary filtered against the [dwyl/english-words](https://github.com/dwyl/english-words) list (Unlicense / public domain), ordered by frequency counted over public-domain [Project Gutenberg](https://www.gutenberg.org/) prose. No third-party frequency data is redistributed — in particular, none of the commonly-used Google-derived word-frequency lists, which carry research-only licensing or unclear provenance. The generator is [`tools/DictionaryBuilder`](tools/DictionaryBuilder) and the built list is committed, so a clone needs no network access to build.
 
 ## License
 
