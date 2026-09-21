@@ -154,15 +154,36 @@ internal static class PredictionTests
         Check("every suggestion is a strict extension of the prefix", allExtend);
 
         // -- dictionary format and integrity (D-28) --------------------------
-        var text = new StringBuilder("#3\nhelp\t1\nhem\t0\nzoo\t2\n");
-        Predictor loaded = Predictor.Load(new StringReader(text.ToString()));
+        // Format: "#<count>\n", then one word per line ascending, then the rank
+        // table as LEB128 varints holding per-256-word deltas.
+        Predictor loaded = Predictor.Load(DictStream("#3\nhem\nhen\nhew\n", 1, 0, 2));
         Check("dictionary header sets the word count", loaded.WordCount == 3);
         loaded.Feed('h'); loaded.Feed('e');
-        Check("a loaded dictionary suggests by rank", loaded.Suggestions().SequenceEqual(new[] { "hem", "help" }));
+        Check("a loaded dictionary suggests by rank", loaded.Suggestions().SequenceEqual(new[] { "hen", "hem", "hew" }));
 
-        Check("malformed header is rejected", Throws(() => Predictor.Load(new StringReader("3\nhelp\t1\n"))));
-        Check("truncated dictionary is rejected", Throws(() => Predictor.Load(new StringReader("#3\nhelp\t1\n"))));
-        Check("malformed line is rejected", Throws(() => Predictor.Load(new StringReader("#1\nnoseparator\n"))));
+        Check("malformed header is rejected", Throws(() => Predictor.Load(DictStream("3\nhelp\n", 0))));
+        Check("truncated word list is rejected", Throws(() => Predictor.Load(DictStream("#3\nhelp\n", 0, 1))));
+        Check("truncated rank table is rejected", Throws(() => Predictor.Load(DictStream("#2\nhem\nhen\n", 0))));
+
+        // Ranks are stored as fixed-width little-endian uint16 values, so values
+        // needing more than one byte must survive the round trip. Use 299
+        // letter-only words in strict ascending order: the LAST character must
+        // vary fastest for the sequence to be ordinal-ascending. (299 words also
+        // keeps the reversed rank table a valid 0..298 permutation.)
+        const int wordCount = 299;
+        var bigHead = new StringBuilder($"#{wordCount}\n");
+        var bigRanks = new int[wordCount];
+        for (int i = 0; i < wordCount; i++)
+        {
+            char mid = (char)('a' + (i / 26) % 26);
+            char last = (char)('a' + i % 26);
+            bigHead.Append('a').Append(mid).Append(last).Append('\n');
+            bigRanks[i] = wordCount - 1 - i;
+        }
+        Predictor wide = Predictor.Load(DictStream(bigHead.ToString(), bigRanks));
+        Check("a 299-word table with multi-byte ranks loads", wide.WordCount == wordCount);
+        wide.Feed('a'); wide.Feed('a');
+        Check("a 299-word dictionary still answers lookups", wide.Suggestions().Count > 0);
 
         Check("non-parallel arrays are rejected",
             Throws(() => new Predictor(new[] { "a", "b" }, new ushort[] { 0 })));
@@ -189,6 +210,22 @@ internal static class PredictionTests
         Console.WriteLine();
         Console.WriteLine($"{_passed} passed, {_failed} failed");
         return _failed;
+    }
+
+    /// <summary>
+    /// Builds an in-memory dictionary stream in the D-28 format: a text header
+    /// and word list, followed by the rank table as fixed-width little-endian
+    /// 16-bit values in word order.
+    /// </summary>
+    private static MemoryStream DictStream(string head, params int[] ranksInOrder)
+    {
+        var bytes = new List<byte>(System.Text.Encoding.ASCII.GetBytes(head));
+        foreach (int rank in ranksInOrder)
+        {
+            bytes.Add((byte)(rank & 0xFF));
+            bytes.Add((byte)((rank >> 8) & 0xFF));
+        }
+        return new MemoryStream(bytes.ToArray());
     }
 
     private static bool AllLowerAscii(Predictor p)

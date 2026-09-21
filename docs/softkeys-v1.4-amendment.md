@@ -101,22 +101,36 @@ Gate sequence: **M13** → **Gate D1** (T-21 witnessed + selftest green) → **M
 | Date | ID | Change | Approved |
 |---|---|---|---|
 | 2026-07-27 | CR-21 | **Amendment A4 adopted; F-22 word prediction authorized for implementation.** Implementer granted blanket authority ("full authority to execute this feature in the most optimized way, based on your assessment"). Design follows the assessment: sorted array + parallel rank table (D-25), boundaries from emitted characters rather than layout (D-26), public-domain dictionary only (D-31/D4.4), accepting suggestions bypasses `EmitKey` (D-30). Version target v1.3.0. | Approved — Nasser |
-| 2026-07-27 | A4 | **M13 complete — prediction implemented; selftest 208 → 273, 0 failed.** New `src/Prediction.cs` (shadow buffer, reset table, prefix index, append-only acceptance) and `tests/PredictionTests.cs` (64 checks). Integration: `EmittedChar` shared with `RefreshKeyCaps` and all Shift/CapsLock state read *before* injection (D-29); suggestion strip docked below the key grid with `Focusable=False`; accepting bypasses `EmitKey` (D-30); `Prediction` setting with pre-A4 files defaulting on; window height migration (R-16). Dictionary built and measured: **30,000 words, 425,378 B raw → 143,048 B Brotli including ranks**. | Approved — Nasser |
+| 2026-07-27 | A4 | **M13 complete — prediction implemented; selftest 208 → 275, 0 failed.** New `src/Prediction.cs` (shadow buffer, reset table, prefix index, append-only acceptance) and `tests/PredictionTests.cs` (66 checks). Integration: `EmittedChar` shared with `RefreshKeyCaps` and all Shift/CapsLock state read *before* injection (D-29); suggestion strip docked below the key grid with `Focusable=False`; accepting bypasses `EmitKey` (D-30); `Prediction` setting with pre-A4 files defaulting on; window height migration (R-16). Dictionary: **42,611 words, 457,533 B raw → 178,261 B Brotli** with the fixed-width rank table. | Approved — Nasser |
+| 2026-07-27 | A4 | **Dictionary rebuilt twice on the quality pass.** (1) **Project Gutenberg boilerplate stripped** — the licence wrapper is 2.8% of characters but pushed `project`, `copyright`, `works`, `terms`, `foundation`, `electronic` into the top 500 ranks, where they surfaced as suggestions. Measured: removing it moves 57% of the shared top-30k words by more than 100 ranks. (2) **Dictionary enlarged 30,000 → 42,611 words** by raising the cap to admit every word with corpus count ≥ 2. The 30k cap was cutting words by a 1–2 occurrence margin, and the casualty list included **`keyboard` itself** (count 3, qualified rank 34,759), plus `phone`, `taxi`, `folder`, `baseball`, `awesome`. The larger list costs +51 KB on a 154 MB exe, which is not a trade worth refusing; `keyb → keyboard` now works. | Approved — Nasser |
 
 ### D4.9 Build verification (M13)
 
 | Artifact | Detail | Value |
 |---|---|---|
-| single-file exe | FileVersion / ProductVersion | `1.3.0.0` / `1.3.0+f5e46d0…` |
+| single-file exe | FileVersion / ProductVersion | `1.3.0.0` / `1.3.0+bf2a927…` |
 | | size | 154.6 MB |
-| | **SHA-256** | `45c199c1cd0029c39ec596d87428ae4c056def1dc4cee3d5247b01d5ba270804` |
-| | selftest (run from the packaged exe) | **273/273, 0 failed** — proves the Brotli dictionary survives single-file publishing and extraction |
+| | **SHA-256** | `8812e7610091d5236dea228a6840ddea811422d8a511678bf53b0c25cfc7b228` |
+| | selftest (run from the packaged exe) | **275/275, 0 failed** — proves the Brotli dictionary survives single-file publishing and extraction |
 | installer | ProductVersion | `1.3.0` |
 | | size | 47.2 MB |
-| | **SHA-256** | `eef298ec370b5c6ec4a3eac188c30f073e6d20a44a3ae9475ea537e76b49894b` |
+| | **SHA-256** | `16b0ca609c87e5ffafb5a0ac1cf18659441cd8275e9ac7fc45b453f63823455f` |
+| dictionary blob | size / SHA-256 | 178,261 B / `25ed83b0c4c4c0bccbedf020a5fbc048f461bc4489bd241664277f9efcfa734e` |
 
 **Verification beyond the selftest.** The engine was also driven against the real shipped dictionary: suggestions were printed for 13 realistic prefixes (`th` → the/that/this, `addr` → address/addressed/addressing, `passw` → password), and the append-only invariant was machine-checked over 30 real candidates with **0 violations** (every suggestion a strict extension; `Accept` returning exactly the difference; a second accept emitting nothing). The strip was rendered and visually confirmed showing `help | held | helped` for the prefix `hel`. F-01's capture exclusion was temporarily disabled for that screenshot and **restored afterwards**; the Approver's `settings.json` was backed up and restored byte-for-byte.
 
-**Dictionary source manifest:** ~90 Project Gutenberg books, ~60 MB of prose, vocabulary filtered against the Unlicense `dwyl/english-words` list, count threshold ≥ 2, top 30,000 by frequency emitted in ascending ordinal order with a parallel rank. Corpus and intermediate outputs live in the gitignored `.dictbuild/`; only the packed asset is committed.
+**Dictionary source manifest:** 87 Project Gutenberg books, 60,237,501 characters → 10,520,314 tokens after the licence wrapper is removed, vocabulary filtered against the Unlicense `dwyl/english-words` list, count threshold ≥ 2 (42,611 words qualify), emitted in ascending ordinal order with a fixed-width little-endian `uint16` rank table. Corpus and intermediate outputs live in the gitignored `.dictbuild/`; only the packed asset is committed.
+
+### D4.10 Known dictionary limitations (measured, not assumed)
+
+The dictionary is functional but its register is **literary English**, and that shows. These are recorded rather than glossed:
+
+- **Modern vocabulary is thin.** The corpus is 87 pre-1930 novels, so words invented later are absent by construction. Two distinct failure modes: words missing from the vocabulary list entirely, and words present but never occurring in the corpus (`internet`, `browser`, `download`, `software`, `video`, `email`, `phone`). Some are outright absent from the source list, so no tuning recovers them.
+- **Archaic and narrative words rank too high.** `awestruck` outranks `awesome` for the prefix `awes`; `photograph` outranks `phone` for `pho`. `said`, `cried`, `replied` appear where `told`/`asked` would in modern prose.
+- **Apostrophe forms are structurally impossible.** The pipeline is letters-only, so `don't`, `it's`, `I'll` can never appear; `don`, `ll`, `re` survive as split fragments (ranks 119/164/331) and are useless as completions.
+- **One-character words are excluded** by the 2–20 length rule, so `a` and `I` — two of the most-typed tokens in English — are not in the dictionary.
+- **Proper nouns leak** because the vocabulary list contains lowercase common nouns that are also names or demonyms (`english`, `paris`, `tom`, `christ`, `hellenic`). `hell → hello, hellenic, hellish` is the visible symptom.
+
+**Assessment:** acceptable as a *literary/formal English* completion list; **not** equivalent to a modern general-purpose dictionary, and the gap cannot be closed from Project Gutenberg plus a public-domain word list. Closing it properly needs a licence-clean modern word source, which does not currently exist under the constraints chosen in D4.4 — that is a known, accepted limitation (L-08), not an oversight. It is recorded in the README's limitations section for users.
 
 **Gate D1 status:** selftest green on the shipped artifacts. The remaining witnessed step is tapping a suggestion with the mouse and confirming the letters land in a focused application (T-21), which the Approver performs on the installed build.

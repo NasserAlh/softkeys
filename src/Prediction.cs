@@ -228,8 +228,7 @@ public sealed class Predictor
             if (stream is null)
                 return null;
             using var brotli = new BrotliStream(stream, CompressionMode.Decompress);
-            using var reader = new StreamReader(brotli, Encoding.UTF8);
-            return Load(reader);
+            return Load(brotli);
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or NotSupportedException)
         {
@@ -238,31 +237,51 @@ public sealed class Predictor
     }
 
     /// <summary>
-    /// Parses the dictionary format (D-28): a `<c>#n</c>` header, then N
-    /// alphabetically-sorted words each followed by its frequency rank.
+    /// Parses the dictionary format (D-28): a `<c>#count</c>` header, then that
+    /// many words in ascending ordinal order one per line, then the rank table
+    /// as fixed-width little-endian 16-bit values in word order.
     /// </summary>
-    internal static Predictor Load(TextReader reader)
+    internal static Predictor Load(Stream stream)
     {
-        string? header = reader.ReadLine();
-        if (header is null || !header.StartsWith('#'))
-            throw new InvalidDataException("dictionary header missing");
-
+        string header = ReadLine(stream) ?? throw new InvalidDataException("dictionary header missing");
+        if (header.Length == 0 || header[0] != '#')
+            throw new InvalidDataException($"dictionary header malformed: '{header}'");
         int count = int.Parse(header.AsSpan(1), System.Globalization.CultureInfo.InvariantCulture);
         if (count <= 0)
             throw new InvalidDataException($"bad dictionary count {count}");
 
         var words = new string[count];
-        var ranks = new ushort[count];
         for (int i = 0; i < count; i++)
+            words[i] = ReadLine(stream) ?? throw new InvalidDataException($"dictionary truncated at word {i}/{count}");
+
+        var ranks = new ushort[count];
+        var raw = new byte[count * 2];
+        int read = 0;
+        while (read < raw.Length)
         {
-            string line = reader.ReadLine() ?? throw new InvalidDataException($"dictionary truncated at {i}/{count}");
-            int tab = line.LastIndexOf('\t');
-            if (tab <= 0)
-                throw new InvalidDataException($"malformed dictionary line {i}: '{line}'");
-            words[i] = line[..tab];
-            ranks[i] = ushort.Parse(line.AsSpan(tab + 1), System.Globalization.CultureInfo.InvariantCulture);
+            int n = stream.Read(raw, read, raw.Length - read);
+            if (n <= 0)
+                throw new InvalidDataException($"rank table truncated at byte {read}/{raw.Length}");
+            read += n;
         }
+        for (int i = 0; i < count; i++)
+            ranks[i] = (ushort)(raw[i * 2] | (raw[i * 2 + 1] << 8));
 
         return new Predictor(words, ranks);
+    }
+
+    /// <summary>Reads one LF-terminated ASCII line, one byte at a time.</summary>
+    private static string? ReadLine(Stream stream)
+    {
+        var bytes = new List<byte>(24);
+        int b;
+        while ((b = stream.ReadByte()) >= 0)
+        {
+            if (b == '\n')
+                return Encoding.ASCII.GetString(bytes.ToArray());
+            if (b != '\r')
+                bytes.Add((byte)b);
+        }
+        return bytes.Count > 0 ? Encoding.ASCII.GetString(bytes.ToArray()) : null;
     }
 }

@@ -34,9 +34,9 @@ Verify the hashes (published in the release notes; for v1.3.0):
 
 ```
 certutil -hashfile softkeys.exe SHA256
-  45c199c1cd0029c39ec596d87428ae4c056def1dc4cee3d5247b01d5ba270804
+  8812e7610091d5236dea228a6840ddea811422d8a511678bf53b0c25cfc7b228
 certutil -hashfile softkeys-setup.exe SHA256
-  eef298ec370b5c6ec4a3eac188c30f073e6d20a44a3ae9475ea537e76b49894b
+  16b0ca609c87e5ffafb5a0ac1cf18659441cd8275e9ac7fc45b453f63823455f
 ```
 
 **SmartScreen note:** both the exe and the installer are unsigned (code-signing certificates cost real money; this is a free tool). Windows may warn on first run — "More info → Run anyway." If you'd rather not trust a downloaded binary, build both yourself (below); the source is short enough to read in one sitting, and the zero-network-code claim is verifiable there.
@@ -84,7 +84,7 @@ This publishes the exe, compiles `installer/output/softkeys-setup.exe`, and prin
 - Arabic keycaps show the base (unshifted) glyph only — shifted Arabic characters (diacritics, tatweel, …) type correctly but aren't printed on the caps; three glyphs per key would hurt readability.
 - The CapsLock indicator refreshes on interaction with the keyboard (after each key and on pointer-enter), not on a timer — toggle CapsLock on the physical keyboard while softkeys is idle and the indicator catches up at your next hover or click. A polling timer is exactly the kind of background chatter this project avoids.
 - Word suggestions are **completion only, English only**. Nothing is ever corrected: "teh" is not changed to "the", and softkeys never deletes on its own. Suggestions are hidden while an Arabic word is being typed.
-- The suggestion dictionary is ranked from **public-domain literature** (Project Gutenberg), which skews slightly literary — the ranking favours narrative vocabulary over conversational usage, and rare modern terms can be missing. The shipped list is 30,000 words; see [`docs/softkeys-v1.4-amendment.md`](docs/softkeys-v1.4-amendment.md) for how it is built and how to regenerate it.
+- The suggestion dictionary is ranked from **public-domain literature** (Project Gutenberg), which skews literary — the ranking favours narrative vocabulary over conversational usage. Concretely: **modern terms are often missing** (`internet`, `download`, `email`, `phone`), some archaic words rank too high (`awestruck` beats `awesome`), **apostrophe forms like `don't` are impossible**, and single-letter words (`a`, `I`) are excluded. It is a good *literary/formal English* completion list, not a modern general-purpose dictionary, and that gap cannot be closed from public-domain sources alone. 42,611 words; see [`docs/softkeys-v1.4-amendment.md`](docs/softkeys-v1.4-amendment.md) for how it is built and how to regenerate it.
 
 ## Credits
 
