@@ -181,7 +181,7 @@ internal static class PredictionTests
             bigRanks[i] = wordCount - 1 - i;
         }
         Predictor wide = Predictor.Load(DictStream(bigHead.ToString(), bigRanks));
-        Check("a 299-word table with multi-byte ranks loads", wide.WordCount == wordCount);
+        Check("a 299-word table with uint16 ranks loads", wide.WordCount == wordCount);
         wide.Feed('a'); wide.Feed('a');
         Check("a 299-word dictionary still answers lookups", wide.Suggestions().Count > 0);
 
